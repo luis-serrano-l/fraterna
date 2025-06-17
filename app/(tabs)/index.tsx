@@ -223,8 +223,14 @@ export default function HomeScreen() {
                   {item.examenParticular.trim() && (
                     <>
                       <View style={styles.labelContainer}>
-                        <TouchableOpacity onPress={() => handleInfoPress('examenParticular')}>
-                          <ThemedText style={styles.label}>Examen Particular:</ThemedText>
+                        <TouchableOpacity 
+                          onPress={() => handleInfoPress('examenParticular')}
+                          disabled={editExamenParticular.trim().length > 0}
+                        >
+                          <ThemedText style={[
+                            styles.label,
+                            editExamenParticular.trim().length > 0 && styles.labelDisabled
+                          ]}>Examen Particular:</ThemedText>
                         </TouchableOpacity>
                       </View>
                       <ThemedText style={styles.messageText}>{item.examenParticular}</ThemedText>
@@ -233,8 +239,14 @@ export default function HomeScreen() {
                   {item.planVida.trim() && (
                     <>
                       <View style={styles.labelContainer}>
-                        <TouchableOpacity onPress={() => handleInfoPress('planVida')}>
-                          <ThemedText style={styles.label}>Plan de vida y trato con el Señor:</ThemedText>
+                        <TouchableOpacity 
+                          onPress={() => handleInfoPress('planVida')}
+                          disabled={editPlanVida.trim().length > 0}
+                        >
+                          <ThemedText style={[
+                            styles.label,
+                            editPlanVida.trim().length > 0 && styles.labelDisabled
+                          ]}>Plan de vida y trato con el Señor:</ThemedText>
                         </TouchableOpacity>
                       </View>
                       <ThemedText style={styles.messageText}>{item.planVida}</ThemedText>
@@ -243,8 +255,14 @@ export default function HomeScreen() {
                   {item.mortificacion.trim() && (
                     <>
                       <View style={styles.labelContainer}>
-                        <TouchableOpacity onPress={() => handleInfoPress('mortificacion')}>
-                          <ThemedText style={styles.label}>Mortificación y espíritu de sacrificio. Carácter:</ThemedText>
+                        <TouchableOpacity 
+                          onPress={() => handleInfoPress('mortificacion')}
+                          disabled={editMortificacion.trim().length > 0}
+                        >
+                          <ThemedText style={[
+                            styles.label,
+                            editMortificacion.trim().length > 0 && styles.labelDisabled
+                          ]}>Mortificación y espíritu de sacrificio. Carácter:</ThemedText>
                         </TouchableOpacity>
                       </View>
                       <ThemedText style={styles.messageText}>{item.mortificacion}</ThemedText>
@@ -253,8 +271,14 @@ export default function HomeScreen() {
                   {item.presenciaDios.trim() && (
                     <>
                       <View style={styles.labelContainer}>
-                        <TouchableOpacity onPress={() => handleInfoPress('presenciaDios')}>
-                          <ThemedText style={styles.label}>Presencia de Dios y aprovechamiento del tiempo:</ThemedText>
+                        <TouchableOpacity 
+                          onPress={() => handleInfoPress('presenciaDios')}
+                          disabled={editPresenciaDios.trim().length > 0}
+                        >
+                          <ThemedText style={[
+                            styles.label,
+                            editPresenciaDios.trim().length > 0 && styles.labelDisabled
+                          ]}>Presencia de Dios y aprovechamiento del tiempo:</ThemedText>
                         </TouchableOpacity>
                       </View>
                       <ThemedText style={styles.messageText}>{item.presenciaDios}</ThemedText>
@@ -263,8 +287,14 @@ export default function HomeScreen() {
                   {item.fePurezaVocacion.trim() && (
                     <>
                       <View style={styles.labelContainer}>
-                        <TouchableOpacity onPress={() => handleInfoPress('fePurezaVocacion')}>
-                          <ThemedText style={styles.label}>Fe / Pureza / Vocación:</ThemedText>
+                        <TouchableOpacity 
+                          onPress={() => handleInfoPress('fePurezaVocacion')}
+                          disabled={editFePurezaVocacion.trim().length > 0}
+                        >
+                          <ThemedText style={[
+                            styles.label,
+                            editFePurezaVocacion.trim().length > 0 && styles.labelDisabled
+                          ]}>Fe / Pureza / Vocación:</ThemedText>
                         </TouchableOpacity>
                       </View>
                       <ThemedText style={styles.messageText}>{item.fePurezaVocacion}</ThemedText>
@@ -273,8 +303,14 @@ export default function HomeScreen() {
                   {item.trabajoEstudio.trim() && (
                     <>
                       <View style={styles.labelContainer}>
-                        <TouchableOpacity onPress={() => handleInfoPress('trabajoEstudio')}>
-                          <ThemedText style={styles.label}>Trabajo / Estudio:</ThemedText>
+                        <TouchableOpacity 
+                          onPress={() => handleInfoPress('trabajoEstudio')}
+                          disabled={editTrabajoEstudio.trim().length > 0}
+                        >
+                          <ThemedText style={[
+                            styles.label,
+                            editTrabajoEstudio.trim().length > 0 && styles.labelDisabled
+                          ]}>Trabajo / Estudio:</ThemedText>
                         </TouchableOpacity>
                       </View>
                       <ThemedText style={styles.messageText}>{item.trabajoEstudio}</ThemedText>
@@ -283,8 +319,14 @@ export default function HomeScreen() {
                   {item.fraternidad.trim() && (
                     <>
                       <View style={styles.labelContainer}>
-                        <TouchableOpacity onPress={() => handleInfoPress('fraternidad')}>
-                          <ThemedText style={styles.label}>Fraternidad, amigos y apostolado:</ThemedText>
+                        <TouchableOpacity 
+                          onPress={() => handleInfoPress('fraternidad')}
+                          disabled={editFraternidad.trim().length > 0}
+                        >
+                          <ThemedText style={[
+                            styles.label,
+                            editFraternidad.trim().length > 0 && styles.labelDisabled
+                          ]}>Fraternidad, amigos y apostolado:</ThemedText>
                         </TouchableOpacity>
                       </View>
                       <ThemedText style={styles.messageText}>{item.fraternidad}</ThemedText>
@@ -293,8 +335,14 @@ export default function HomeScreen() {
                   {item.familia.trim() && (
                     <>
                       <View style={styles.labelContainer}>
-                        <TouchableOpacity onPress={() => handleInfoPress('familia')}>
-                          <ThemedText style={styles.label}>Familia:</ThemedText>
+                        <TouchableOpacity 
+                          onPress={() => handleInfoPress('familia')}
+                          disabled={editFamilia.trim().length > 0}
+                        >
+                          <ThemedText style={[
+                            styles.label,
+                            editFamilia.trim().length > 0 && styles.labelDisabled
+                          ]}>Familia:</ThemedText>
                         </TouchableOpacity>
                       </View>
                       <ThemedText style={styles.messageText}>{item.familia}</ThemedText>
@@ -303,8 +351,14 @@ export default function HomeScreen() {
                   {item.pobrezaGenerosidad.trim() && (
                     <>
                       <View style={styles.labelContainer}>
-                        <TouchableOpacity onPress={() => handleInfoPress('pobrezaGenerosidad')}>
-                          <ThemedText style={styles.label}>Pobreza y generosidad:</ThemedText>
+                        <TouchableOpacity 
+                          onPress={() => handleInfoPress('pobrezaGenerosidad')}
+                          disabled={editPobrezaGenerosidad.trim().length > 0}
+                        >
+                          <ThemedText style={[
+                            styles.label,
+                            editPobrezaGenerosidad.trim().length > 0 && styles.labelDisabled
+                          ]}>Pobreza y generosidad:</ThemedText>
                         </TouchableOpacity>
                       </View>
                       <ThemedText style={styles.messageText}>{item.pobrezaGenerosidad}</ThemedText>
@@ -313,8 +367,14 @@ export default function HomeScreen() {
                   {item.preocupaciones.trim() && (
                     <>
                       <View style={styles.labelContainer}>
-                        <TouchableOpacity onPress={() => handleInfoPress('preocupaciones')}>
-                          <ThemedText style={styles.label}>Preocupaciones, tristezas, alegrías y preguntas:</ThemedText>
+                        <TouchableOpacity 
+                          onPress={() => handleInfoPress('preocupaciones')}
+                          disabled={editPreocupaciones.trim().length > 0}
+                        >
+                          <ThemedText style={[
+                            styles.label,
+                            editPreocupaciones.trim().length > 0 && styles.labelDisabled
+                          ]}>Preocupaciones, tristezas, alegrías y preguntas:</ThemedText>
                         </TouchableOpacity>
                       </View>
                       <ThemedText style={styles.messageText}>{item.preocupaciones}</ThemedText>
@@ -382,8 +442,14 @@ export default function HomeScreen() {
                   />
 
                   <View style={styles.labelContainer}>
-                    <TouchableOpacity onPress={() => handleInfoPress('examenParticular')}>
-                      <ThemedText style={styles.label}>Examen Particular:</ThemedText>
+                    <TouchableOpacity 
+                      onPress={() => handleInfoPress('examenParticular')}
+                      disabled={editExamenParticular.trim().length > 0}
+                    >
+                      <ThemedText style={[
+                        styles.label,
+                        editExamenParticular.trim().length > 0 && styles.labelDisabled
+                      ]}>Examen Particular:</ThemedText>
                     </TouchableOpacity>
                   </View>
                   <TextInput
@@ -396,13 +462,19 @@ export default function HomeScreen() {
                     onChangeText={setEditExamenParticular}
                     multiline={true}
                     autoFocus={true}
-                    placeholder={activePlaceholder === 'examenParticular' ? descriptions.examenParticular : "San Ignacio de Loyola"}
+                    placeholder={activePlaceholder === 'examenParticular' ? descriptions.examenParticular : "Buscando a San Ignacio de Loyola..."}
                     placeholderTextColor={Colors[colorScheme ?? 'light'].tabIconDefault}
                   />
 
                   <View style={styles.labelContainer}>
-                    <TouchableOpacity onPress={() => handleInfoPress('planVida')}>
-                      <ThemedText style={styles.label}>Plan de vida y trato con el Señor:</ThemedText>
+                    <TouchableOpacity 
+                      onPress={() => handleInfoPress('planVida')}
+                      disabled={editPlanVida.trim().length > 0}
+                    >
+                      <ThemedText style={[
+                        styles.label,
+                        editPlanVida.trim().length > 0 && styles.labelDisabled
+                      ]}>Plan de vida y trato con el Señor:</ThemedText>
                     </TouchableOpacity>
                   </View>
                   <TextInput
@@ -413,13 +485,19 @@ export default function HomeScreen() {
                     value={editPlanVida}
                     onChangeText={setEditPlanVida}
                     multiline={true}
-                    placeholder={activePlaceholder === 'planVida' ? descriptions.planVida : "Santa Teresa de Ávila"}
+                    placeholder={activePlaceholder === 'planVida' ? descriptions.planVida : "Pensando en Santa Teresa de Ávila..."}
                     placeholderTextColor={Colors[colorScheme ?? 'light'].tabIconDefault}
                   />
 
                   <View style={styles.labelContainer}>
-                    <TouchableOpacity onPress={() => handleInfoPress('mortificacion')}>
-                      <ThemedText style={styles.label}>Mortificación y espíritu de sacrificio. Carácter:</ThemedText>
+                    <TouchableOpacity 
+                      onPress={() => handleInfoPress('mortificacion')}
+                      disabled={editMortificacion.trim().length > 0}
+                    >
+                      <ThemedText style={[
+                        styles.label,
+                        editMortificacion.trim().length > 0 && styles.labelDisabled
+                      ]}>Mortificación y espíritu de sacrificio. Carácter:</ThemedText>
                     </TouchableOpacity>
                   </View>
                   <TextInput
@@ -430,13 +508,19 @@ export default function HomeScreen() {
                     value={editMortificacion}
                     onChangeText={setEditMortificacion}
                     multiline={true}
-                    placeholder={activePlaceholder === 'mortificacion' ? descriptions.mortificacion : "San Juan de la Cruz"}
+                    placeholder={activePlaceholder === 'mortificacion' ? descriptions.mortificacion : "Cerca de San Juan de la Cruz..."}
                     placeholderTextColor={Colors[colorScheme ?? 'light'].tabIconDefault}
                   />
 
                   <View style={styles.labelContainer}>
-                    <TouchableOpacity onPress={() => handleInfoPress('presenciaDios')}>
-                      <ThemedText style={styles.label}>Presencia de Dios y aprovechamiento del tiempo:</ThemedText>
+                    <TouchableOpacity 
+                      onPress={() => handleInfoPress('presenciaDios')}
+                      disabled={editPresenciaDios.trim().length > 0}
+                    >
+                      <ThemedText style={[
+                        styles.label,
+                        editPresenciaDios.trim().length > 0 && styles.labelDisabled
+                      ]}>Presencia de Dios y aprovechamiento del tiempo:</ThemedText>
                     </TouchableOpacity>
                   </View>
                   <TextInput
@@ -447,13 +531,19 @@ export default function HomeScreen() {
                     value={editPresenciaDios}
                     onChangeText={setEditPresenciaDios}
                     multiline={true}
-                    placeholder={activePlaceholder === 'presenciaDios' ? descriptions.presenciaDios : "San Josemaría Escrivá"}
+                    placeholder={activePlaceholder === 'presenciaDios' ? descriptions.presenciaDios : "Como San Josemaría Escrivá..."}
                     placeholderTextColor={Colors[colorScheme ?? 'light'].tabIconDefault}
                   />
 
                   <View style={styles.labelContainer}>
-                    <TouchableOpacity onPress={() => handleInfoPress('fePurezaVocacion')}>
-                      <ThemedText style={styles.label}>Fe / Pureza / Vocación:</ThemedText>
+                    <TouchableOpacity 
+                      onPress={() => handleInfoPress('fePurezaVocacion')}
+                      disabled={editFePurezaVocacion.trim().length > 0}
+                    >
+                      <ThemedText style={[
+                        styles.label,
+                        editFePurezaVocacion.trim().length > 0 && styles.labelDisabled
+                      ]}>Fe / Pureza / Vocación:</ThemedText>
                     </TouchableOpacity>
                   </View>
                   <TextInput
@@ -464,13 +554,19 @@ export default function HomeScreen() {
                     value={editFePurezaVocacion}
                     onChangeText={setEditFePurezaVocacion}
                     multiline={true}
-                    placeholder={activePlaceholder === 'fePurezaVocacion' ? descriptions.fePurezaVocacion : "Santa María Goretti"}
+                    placeholder={activePlaceholder === 'fePurezaVocacion' ? descriptions.fePurezaVocacion : "Inspirándome en Santa María Goretti..."}
                     placeholderTextColor={Colors[colorScheme ?? 'light'].tabIconDefault}
                   />
 
                   <View style={styles.labelContainer}>
-                    <TouchableOpacity onPress={() => handleInfoPress('trabajoEstudio')}>
-                      <ThemedText style={styles.label}>Trabajo / Estudio:</ThemedText>
+                    <TouchableOpacity 
+                      onPress={() => handleInfoPress('trabajoEstudio')}
+                      disabled={editTrabajoEstudio.trim().length > 0}
+                    >
+                      <ThemedText style={[
+                        styles.label,
+                        editTrabajoEstudio.trim().length > 0 && styles.labelDisabled
+                      ]}>Trabajo / Estudio:</ThemedText>
                     </TouchableOpacity>
                   </View>
                   <TextInput
@@ -481,13 +577,19 @@ export default function HomeScreen() {
                     value={editTrabajoEstudio}
                     onChangeText={setEditTrabajoEstudio}
                     multiline={true}
-                    placeholder={activePlaceholder === 'trabajoEstudio' ? descriptions.trabajoEstudio : "Santo Tomás de Aquino"}
+                    placeholder={activePlaceholder === 'trabajoEstudio' ? descriptions.trabajoEstudio : "Siguiendo a Santo Tomás de Aquino..."}
                     placeholderTextColor={Colors[colorScheme ?? 'light'].tabIconDefault}
                   />
 
                   <View style={styles.labelContainer}>
-                    <TouchableOpacity onPress={() => handleInfoPress('fraternidad')}>
-                      <ThemedText style={styles.label}>Fraternidad, amigos y apostolado:</ThemedText>
+                    <TouchableOpacity 
+                      onPress={() => handleInfoPress('fraternidad')}
+                      disabled={editFraternidad.trim().length > 0}
+                    >
+                      <ThemedText style={[
+                        styles.label,
+                        editFraternidad.trim().length > 0 && styles.labelDisabled
+                      ]}>Fraternidad, amigos y apostolado:</ThemedText>
                     </TouchableOpacity>
                   </View>
                   <TextInput
@@ -498,13 +600,19 @@ export default function HomeScreen() {
                     value={editFraternidad}
                     onChangeText={setEditFraternidad}
                     multiline={true}
-                    placeholder={activePlaceholder === 'fraternidad' ? descriptions.fraternidad : "San Juan Bosco"}
+                    placeholder={activePlaceholder === 'fraternidad' ? descriptions.fraternidad : "Al estilo deSan Juan Bosco..."}
                     placeholderTextColor={Colors[colorScheme ?? 'light'].tabIconDefault}
                   />
 
                   <View style={styles.labelContainer}>
-                    <TouchableOpacity onPress={() => handleInfoPress('familia')}>
-                      <ThemedText style={styles.label}>Familia:</ThemedText>
+                    <TouchableOpacity 
+                      onPress={() => handleInfoPress('familia')}
+                      disabled={editFamilia.trim().length > 0}
+                    >
+                      <ThemedText style={[
+                        styles.label,
+                        editFamilia.trim().length > 0 && styles.labelDisabled
+                      ]}>Familia:</ThemedText>
                     </TouchableOpacity>
                   </View>
                   <TextInput
@@ -515,13 +623,19 @@ export default function HomeScreen() {
                     value={editFamilia}
                     onChangeText={setEditFamilia}
                     multiline={true}
-                    placeholder={activePlaceholder === 'familia' ? descriptions.familia : "San José"}
+                    placeholder={activePlaceholder === 'familia' ? descriptions.familia : "Imitando a San José..."}
                     placeholderTextColor={Colors[colorScheme ?? 'light'].tabIconDefault}
                   />
 
                   <View style={styles.labelContainer}>
-                    <TouchableOpacity onPress={() => handleInfoPress('pobrezaGenerosidad')}>
-                      <ThemedText style={styles.label}>Pobreza y generosidad:</ThemedText>
+                    <TouchableOpacity 
+                      onPress={() => handleInfoPress('pobrezaGenerosidad')}
+                      disabled={editPobrezaGenerosidad.trim().length > 0}
+                    >
+                      <ThemedText style={[
+                        styles.label,
+                        editPobrezaGenerosidad.trim().length > 0 && styles.labelDisabled
+                      ]}>Pobreza y generosidad:</ThemedText>
                     </TouchableOpacity>
                   </View>
                   <TextInput
@@ -532,13 +646,19 @@ export default function HomeScreen() {
                     value={editPobrezaGenerosidad}
                     onChangeText={setEditPobrezaGenerosidad}
                     multiline={true}
-                    placeholder={activePlaceholder === 'pobrezaGenerosidad' ? descriptions.pobrezaGenerosidad : "San Francisco de Asís"}
+                    placeholder={activePlaceholder === 'pobrezaGenerosidad' ? descriptions.pobrezaGenerosidad : "Caminando con San Francisco de Asís..."}
                     placeholderTextColor={Colors[colorScheme ?? 'light'].tabIconDefault}
                   />
 
                   <View style={styles.labelContainer}>
-                    <TouchableOpacity onPress={() => handleInfoPress('preocupaciones')}>
-                      <ThemedText style={styles.label}>Preocupaciones, tristezas, alegrías y preguntas:</ThemedText>
+                    <TouchableOpacity 
+                      onPress={() => handleInfoPress('preocupaciones')}
+                      disabled={editPreocupaciones.trim().length > 0}
+                    >
+                      <ThemedText style={[
+                        styles.label,
+                        editPreocupaciones.trim().length > 0 && styles.labelDisabled
+                      ]}>Preocupaciones, tristezas, alegrías y preguntas:</ThemedText>
                     </TouchableOpacity>
                   </View>
                   <TextInput
@@ -549,7 +669,7 @@ export default function HomeScreen() {
                     value={editPreocupaciones}
                     onChangeText={setEditPreocupaciones}
                     multiline={true}
-                    placeholder={activePlaceholder === 'preocupaciones' ? descriptions.preocupaciones : "Santa Teresita del Niño Jesús"}
+                    placeholder={activePlaceholder === 'preocupaciones' ? descriptions.preocupaciones : "Confiando como Santa Teresita del Niño Jesús..."}
                     placeholderTextColor={Colors[colorScheme ?? 'light'].tabIconDefault}
                   />
                 </ScrollView>
@@ -612,6 +732,10 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginRight: 8,
     textDecorationLine: 'underline',
+  },
+  labelDisabled: {
+    textDecorationLine: 'none',
+    opacity: 0.7,
   },
   messageText: {
     fontSize: 16,
