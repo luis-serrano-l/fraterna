@@ -18,10 +18,10 @@ export default function TabLayout() {
         headerShown: false,
       }}>
       <Tabs.Screen
-        name="notes"
+        name="index"
         options={{
-          title: 'Notes',
-          tabBarIcon: ({ color }) => <IconSymbol name="note.text" size={24} color={color} />,
+          title: 'Home',
+          tabBarIcon: ({ color }) => <IconSymbol name="house.fill" size={24} color={color} />,
         }}
       />
       <Tabs.Screen
