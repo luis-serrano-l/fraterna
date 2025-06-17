@@ -195,6 +195,14 @@ export default function HomeScreen() {
     >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <ThemedView style={styles.container}>
+          {messages.length > 0 && (
+            <View style={styles.headerContainer}>
+              <ThemedText style={styles.headerTitle}>
+                {messages.sort((a, b) => b.date.getTime() - a.date.getTime())[0].examenParticular}
+              </ThemedText>
+            </View>
+          )}
+
           <TouchableOpacity 
             style={[
               styles.fab,
@@ -713,7 +721,7 @@ const styles = StyleSheet.create({
   noteContent: {
     padding: 12,
     borderRadius: 12,
-    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+    backgroundColor: 'rgba(0, 255, 255, 0.05)',
     position: 'relative',
   },
   dateText: {
@@ -775,7 +783,7 @@ const styles = StyleSheet.create({
   editInput: {
     minHeight: 80,
     borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.1)',
+    borderColor: 'rgba(0, 255, 255, 0.2)',
     borderRadius: 8,
     padding: 12,
     marginBottom: 16,
@@ -803,6 +811,7 @@ const styles = StyleSheet.create({
   separator: {
     height: 1,
     marginVertical: 8,
+    backgroundColor: 'rgba(0, 255, 255, 0.2)',
   },
   deleteButton: {
     position: 'absolute',
@@ -815,5 +824,23 @@ const styles = StyleSheet.create({
   },
   formScrollViewContent: {
     paddingBottom: 20,
+  },
+  headerContainer: {
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0, 255, 255, 0.2)',
+    marginBottom: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    lineHeight: 32,
+  },
+  headerContent: {
+    fontSize: 14,
+    lineHeight: 20,
   },
 }); 
