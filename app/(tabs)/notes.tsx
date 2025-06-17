@@ -3,62 +3,112 @@ import { ThemedView } from '@/components/ThemedView';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useFocusEffect } from '@react-navigation/native';
 import React, { useRef, useState } from 'react';
-import { FlatList, Keyboard, KeyboardAvoidingView, Modal, Platform, Pressable, StyleSheet, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
+import { Alert, FlatList, Keyboard, KeyboardAvoidingView, Modal, Platform, Pressable, StyleSheet, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 
 type Message = {
   id: string;
-  text: string;
+  date: Date;
+  plan: string;
+  apostolado: string;
   timestamp: Date;
 };
 
 export default function NotesScreen() {
   const [messages, setMessages] = useState<Message[]>([]);
-  const [inputText, setInputText] = useState('');
   const [editingMessage, setEditingMessage] = useState<Message | null>(null);
-  const [editText, setEditText] = useState('');
+  const [editDate, setEditDate] = useState(new Date());
+  const [editPlan, setEditPlan] = useState('');
+  const [editApostolado, setEditApostolado] = useState('');
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const colorScheme = useColorScheme();
-  const inputRef = useRef<TextInput>(null);
+  const planInputRef = useRef<TextInput>(null);
 
-  const handleSend = () => {
-    if (inputText.trim()) {
-      const newMessage: Message = {
-        id: Date.now().toString(),
-        text: inputText.trim(),
-        timestamp: new Date(),
-      };
-      setMessages([...messages, newMessage]);
-      setInputText('');
-    }
+  const handleNewNote = () => {
+    const newDate = new Date();
+    setEditingMessage({
+      id: Date.now().toString(),
+      date: newDate,
+      plan: '',
+      apostolado: '',
+      timestamp: newDate,
+    });
+    setEditDate(newDate);
+    setEditPlan('');
+    setEditApostolado('');
   };
 
   const handleEdit = (message: Message) => {
     setEditingMessage(message);
-    setEditText(message.text);
+    setEditDate(message.date);
+    setEditPlan(message.plan);
+    setEditApostolado(message.apostolado);
   };
 
   const handleSaveEdit = () => {
-    if (editingMessage && editText.trim()) {
-      setMessages(messages.map(msg => 
-        msg.id === editingMessage.id 
-          ? { ...msg, text: editText.trim(), timestamp: new Date() }
-          : msg
-      ));
+    if (editingMessage) {
+      if (messages.some(msg => msg.id === editingMessage.id)) {
+        // Update existing note
+        setMessages(messages.map(msg => 
+          msg.id === editingMessage.id 
+            ? { 
+                ...msg, 
+                date: editDate,
+                plan: editPlan.trim(),
+                apostolado: editApostolado.trim(),
+                timestamp: new Date() 
+              }
+            : msg
+        ));
+      } else {
+        // Add new note
+        setMessages([...messages, {
+          id: editingMessage.id,
+          date: editDate,
+          plan: editPlan.trim(),
+          apostolado: editApostolado.trim(),
+          timestamp: editingMessage.timestamp,
+        }]);
+      }
       setEditingMessage(null);
-      setEditText('');
     }
   };
 
   const handleCancelEdit = () => {
     setEditingMessage(null);
-    setEditText('');
+  };
+
+  const onDateChange = (event: any, selectedDate?: Date) => {
+    setShowDatePicker(false);
+    if (selectedDate) {
+      setEditDate(selectedDate);
+    }
+  };
+
+  const handleDelete = (id: string) => {
+    Alert.alert(
+      "Delete Note",
+      "Are you sure you want to delete this note?",
+      [
+        {
+          text: "Cancel",
+          style: "cancel"
+        },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () => setMessages(messages.filter(msg => msg.id !== id))
+        }
+      ]
+    );
   };
 
   useFocusEffect(
     React.useCallback(() => {
       const timer = setTimeout(() => {
-        inputRef.current?.focus();
+        planInputRef.current?.focus();
       }, 100);
       return () => clearTimeout(timer);
     }, [])
@@ -71,48 +121,64 @@ export default function NotesScreen() {
     >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <ThemedView style={styles.container}>
+          <TouchableOpacity 
+            style={[
+              styles.fab,
+              { backgroundColor: Colors[colorScheme ?? 'light'].tint }
+            ]} 
+            onPress={handleNewNote}
+          >
+            <View style={styles.plusSign}>
+              <View style={[styles.plusVertical, { backgroundColor: Colors[colorScheme ?? 'light'].background }]} />
+              <View style={[styles.plusHorizontal, { backgroundColor: Colors[colorScheme ?? 'light'].background }]} />
+            </View>
+          </TouchableOpacity>
+
           <FlatList
-            data={messages}
+            data={[...messages].sort((a, b) => b.date.getTime() - a.date.getTime())}
             keyExtractor={(item) => item.id}
             renderItem={({ item }) => (
-              <Pressable onPress={() => handleEdit(item)}>
-                <View style={styles.messageContainer}>
-                  <ThemedText style={styles.messageText}>{item.text}</ThemedText>
-                  <ThemedText style={styles.timestamp}>
-                    {item.timestamp.toLocaleTimeString()}
+              <View style={styles.noteContainer}>
+                <Pressable 
+                  style={styles.noteContent}
+                  onPress={() => handleEdit(item)}
+                >
+                  <ThemedText style={styles.dateText}>
+                    {item.date.toLocaleDateString()}
                   </ThemedText>
-                </View>
-              </Pressable>
+                  {item.plan.trim() && (
+                    <>
+                      <ThemedText style={styles.label}>Plan:</ThemedText>
+                      <ThemedText style={styles.messageText}>{item.plan}</ThemedText>
+                    </>
+                  )}
+                  {item.apostolado.trim() && (
+                    <>
+                      <ThemedText style={styles.label}>Apostolado:</ThemedText>
+                      <ThemedText style={styles.messageText}>{item.apostolado}</ThemedText>
+                    </>
+                  )}
+                  <TouchableOpacity 
+                    style={styles.deleteButton}
+                    onPress={() => handleDelete(item.id)}
+                  >
+                    <IconSymbol
+                      name="trash.fill"
+                      size={20}
+                      color={Colors[colorScheme ?? 'light'].text}
+                    />
+                  </TouchableOpacity>
+                </Pressable>
+              </View>
+            )}
+            ItemSeparatorComponent={() => (
+              <View style={[
+                styles.separator,
+                { backgroundColor: Colors[colorScheme ?? 'light'].tabIconDefault }
+              ]} />
             )}
             style={styles.messageList}
           />
-          <View style={styles.inputContainer}>
-            <TextInput
-              ref={inputRef}
-              style={[
-                styles.input,
-                { 
-                  color: Colors[colorScheme ?? 'light'].text,
-                  backgroundColor: Colors[colorScheme ?? 'light'].background
-                }
-              ]}
-              value={inputText}
-              onChangeText={setInputText}
-              placeholder="Type a message..."
-              placeholderTextColor={Colors[colorScheme ?? 'light'].tabIconDefault}
-              multiline={false}
-              autoCapitalize="sentences"
-              returnKeyType="send"
-              onSubmitEditing={handleSend}
-            />
-            <TouchableOpacity onPress={handleSend} style={styles.sendButton}>
-              <IconSymbol
-                name="arrow.up.circle.fill"
-                size={32}
-                color={Colors[colorScheme ?? 'light'].tint}
-              />
-            </TouchableOpacity>
-          </View>
 
           <Modal
             animationType="slide"
@@ -120,35 +186,58 @@ export default function NotesScreen() {
             visible={editingMessage !== null}
             onRequestClose={handleCancelEdit}
           >
-            <TouchableWithoutFeedback onPress={handleCancelEdit}>
-              <View style={styles.modalOverlay}>
-                <TouchableWithoutFeedback>
-                  <View style={[
-                    styles.modalContent,
-                    { backgroundColor: Colors[colorScheme ?? 'light'].background }
-                  ]}>
-                    <TextInput
-                      style={[
-                        styles.editInput,
-                        { color: Colors[colorScheme ?? 'light'].text }
-                      ]}
-                      value={editText}
-                      onChangeText={setEditText}
-                      multiline={true}
-                      autoFocus={true}
-                    />
-                    <View style={styles.modalButtons}>
-                      <TouchableOpacity 
-                        style={[styles.modalButton, styles.saveButton]} 
-                        onPress={handleSaveEdit}
-                      >
-                        <ThemedText style={styles.saveButtonText}>Save</ThemedText>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                </TouchableWithoutFeedback>
+            <ThemedView style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <TouchableOpacity 
+                  style={styles.closeButton}
+                  onPress={handleCancelEdit}
+                >
+                  <ThemedText style={styles.closeButtonText}>✕</ThemedText>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[styles.saveButton, styles.headerSaveButton]} 
+                  onPress={handleSaveEdit}
+                >
+                  <ThemedText style={styles.saveButtonText}>Save</ThemedText>
+                </TouchableOpacity>
               </View>
-            </TouchableWithoutFeedback>
+
+              <DateTimePicker
+                value={editDate}
+                mode="date"
+                display="default"
+                onChange={onDateChange}
+                style={styles.datePicker}
+              />
+
+              <ThemedText style={styles.label}>Plan:</ThemedText>
+              <TextInput
+                ref={planInputRef}
+                style={[
+                  styles.editInput,
+                  { color: Colors[colorScheme ?? 'light'].text }
+                ]}
+                value={editPlan}
+                onChangeText={setEditPlan}
+                multiline={true}
+                autoFocus={true}
+                placeholder="Enter your plan..."
+                placeholderTextColor={Colors[colorScheme ?? 'light'].tabIconDefault}
+              />
+
+              <ThemedText style={styles.label}>Apostolado:</ThemedText>
+              <TextInput
+                style={[
+                  styles.editInput,
+                  { color: Colors[colorScheme ?? 'light'].text }
+                ]}
+                value={editApostolado}
+                onChangeText={setEditApostolado}
+                multiline={true}
+                placeholder="San Pablo a tope..."
+                placeholderTextColor={Colors[colorScheme ?? 'light'].tabIconDefault}
+              />
+            </ThemedView>
           </Modal>
         </ThemedView>
       </TouchableWithoutFeedback>
@@ -161,64 +250,83 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingTop: 60,
   },
-  messageList: {
-    flex: 1,
-    padding: 16,
-  },
-  messageContainer: {
-    marginBottom: 16,
-    padding: 12,
-    borderRadius: 12,
-    backgroundColor: 'rgba(0, 0, 0, 0.05)',
-    maxWidth: '80%',
-  },
-  messageText: {
-    fontSize: 16,
-  },
-  timestamp: {
-    fontSize: 12,
-    opacity: 0.6,
-    marginTop: 4,
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    padding: 16,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(0, 0, 0, 0.1)',
-    backgroundColor: 'transparent',
-  },
-  input: {
-    flex: 1,
-    height: 40,
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    marginRight: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.1)',
-  },
-  sendButton: {
+  fab: {
+    position: 'absolute',
+    right: 20,
+    top: 80,
+    width: 50,
+    height: 50,
+    borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    width: '90%',
-    marginBottom: 30,
-    padding: 20,
-    borderRadius: 12,
     elevation: 5,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
+    zIndex: 1,
+  },
+  messageList: {
+    flex: 1,
+    padding: 16,
+  },
+  noteContainer: {
+    marginBottom: 16,
+  },
+  noteContent: {
+    padding: 12,
+    borderRadius: 12,
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+    position: 'relative',
+  },
+  dateText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  messageText: {
+    fontSize: 16,
+  },
+  modalContent: {
+    flex: 1,
+    padding: 20,
+    paddingTop: 60,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  closeButton: {
+    padding: 8,
+  },
+  closeButtonText: {
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  headerSaveButton: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+  },
+  saveButton: {
+    borderRadius: 6,
+    backgroundColor: '#007AFF',
+  },
+  saveButtonText: {
+    color: 'white',
+  },
+  datePicker: {
+    marginBottom: 16,
   },
   editInput: {
-    minHeight: 100,
+    minHeight: 80,
     borderWidth: 1,
     borderColor: 'rgba(0, 0, 0, 0.1)',
     borderRadius: 8,
@@ -226,19 +334,33 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     fontSize: 16,
   },
-  modalButtons: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
+  plusSign: {
+    width: 24,
+    height: 24,
+    position: 'relative',
   },
-  modalButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 8,
+  plusVertical: {
+    position: 'absolute',
+    width: 2,
+    height: '100%',
+    left: '50%',
+    transform: [{ translateX: -1 }],
   },
-  saveButton: {
-    backgroundColor: '#007AFF',
+  plusHorizontal: {
+    position: 'absolute',
+    width: '100%',
+    height: 2,
+    top: '50%',
+    transform: [{ translateY: -1 }],
   },
-  saveButtonText: {
-    color: 'white',
+  separator: {
+    height: 1,
+    marginVertical: 8,
+  },
+  deleteButton: {
+    position: 'absolute',
+    bottom: 8,
+    right: 8,
+    padding: 8,
   },
 }); 
