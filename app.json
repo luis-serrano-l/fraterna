@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "expoapp",
-    "slug": "expoapp",
+    "name": "fraterna",
+    "slug": "fraterna",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "expoapp",
+    "scheme": "fraterna",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
