@@ -21,14 +21,21 @@ export default function TabLayout() {
         name="index"
         options={{
           title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol name="house.fill" size={24} color={color} />,
+          tabBarIcon: ({ color, size }) => <IconSymbol name="house" color={color} size={size} />,
+        }}
+      />
+      <Tabs.Screen
+        name="calendar"
+        options={{
+          title: 'Calendar',
+          tabBarIcon: ({ color, size }) => <IconSymbol name="calendar" color={color} size={size} />,
         }}
       />
       <Tabs.Screen
         name="settings"
         options={{
           title: 'Settings',
-          tabBarIcon: ({ color }) => <IconSymbol name="gearshape.fill" size={24} color={color} />,
+          tabBarIcon: ({ color, size }) => <IconSymbol name="gear" color={color} size={size} />,
         }}
       />
     </Tabs>
