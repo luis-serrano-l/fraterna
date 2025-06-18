@@ -3,9 +3,10 @@ import { ThemedView } from '@/components/ThemedView';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useFocusEffect } from '@react-navigation/native';
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Alert, FlatList, Keyboard, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 
 type Message = {
@@ -205,6 +206,25 @@ export default function HomeScreen() {
     }
     return null;
   };
+
+  useEffect(() => {
+    const loadMessages = async () => {
+      const saved = await AsyncStorage.getItem('notes');
+      if (saved) {
+        const parsed = JSON.parse(saved).map((msg: any) => ({
+          ...msg,
+          date: msg.date ? new Date(msg.date) : new Date(),
+          timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(),
+        }));
+        setMessages(parsed);
+      }
+    };
+    loadMessages();
+  }, []);
+
+  useEffect(() => {
+    AsyncStorage.setItem('notes', JSON.stringify(messages));
+  }, [messages]);
 
   return (
     <KeyboardAvoidingView 
@@ -762,7 +782,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   noteContentSelected: {
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: 'aqua',
   },
   dateText: {
