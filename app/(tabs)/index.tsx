@@ -11,7 +11,6 @@ import { Alert, FlatList, Keyboard, KeyboardAvoidingView, Modal, Platform, Press
 type Message = {
   id: string;
   date: Date;
-  examenParticular: string;
   planVida: string;
   mortificacion: string;
   presenciaDios: string;
@@ -21,11 +20,11 @@ type Message = {
   familia: string;
   pobrezaGenerosidad: string;
   preocupaciones: string;
+  puntoLucha: string;
   timestamp: Date;
 };
 
 const descriptions = {
-  examenParticular: "Creador del examen de conciencia espiritual y fundador de los jesuitas, sistematizó la práctica del examen diario de conciencia.",
   planVida: "Maestra de la vida espiritual y la oración, enseñó sobre las etapas del desarrollo espiritual y el mantenimiento de una relación personal con Dios.",
   mortificacion: "Doctor de la Iglesia que escribió extensamente sobre la abnegación, la purificación espiritual y la \"noche oscura del alma\".",
   presenciaDios: "Fundador del Opus Dei, enseñó sobre la santificación del trabajo ordinario y vivir en constante presencia de Dios, aprovechando cada momento para la oración y el apostolado.",
@@ -34,14 +33,15 @@ const descriptions = {
   fraternidad: "Dedicó su vida a los jóvenes, creando un ambiente fraternal para la educación y evangelización, enfatizando la amistad en el trabajo apostólico.",
   familia: "Patrón de las familias y de la Iglesia universal, modelo del esposo y padre fiel que protegió a la Sagrada Familia.",
   pobrezaGenerosidad: "Abrazó la pobreza radical y regaló su herencia para servir a los pobres, fundando la orden franciscana basada en la pobreza evangélica.",
-  preocupaciones: "Experimentó sequedad espiritual y dudas pero mantuvo la confianza en el amor de Dios, enseñando el \"caminito\" de la infancia espiritual y el abandono a la Divina Providencia."
+  preocupaciones: "Experimentó sequedad espiritual y dudas pero mantuvo la confianza en el amor de Dios, enseñando el \"caminito\" de la infancia espiritual y el abandono a la Divina Providencia.",
+  puntoLucha: "Creador del examen de conciencia espiritual y fundador de los jesuitas, sistematizó la práctica del examen diario de conciencia.",
 };
 
 export default function HomeScreen() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [editingMessage, setEditingMessage] = useState<Message | null>(null);
   const [editDate, setEditDate] = useState(new Date());
-  const [editExamenParticular, setEditExamenParticular] = useState('');
+  const [editPuntoLucha, setEditPuntoLucha] = useState('');
   const [editPlanVida, setEditPlanVida] = useState('');
   const [editMortificacion, setEditMortificacion] = useState('');
   const [editPresenciaDios, setEditPresenciaDios] = useState('');
@@ -55,13 +55,13 @@ export default function HomeScreen() {
   const colorScheme = useColorScheme();
   const planInputRef = useRef<TextInput>(null);
   const [activePlaceholder, setActivePlaceholder] = useState<keyof typeof descriptions | null>(null);
+  const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
 
   const handleNewNote = () => {
     const newDate = new Date();
     setEditingMessage({
       id: Date.now().toString(),
       date: newDate,
-      examenParticular: '',
       planVida: '',
       mortificacion: '',
       presenciaDios: '',
@@ -71,10 +71,11 @@ export default function HomeScreen() {
       familia: '',
       pobrezaGenerosidad: '',
       preocupaciones: '',
+      puntoLucha: '',
       timestamp: newDate,
     });
     setEditDate(newDate);
-    setEditExamenParticular('');
+    setEditPuntoLucha('');
     setEditPlanVida('');
     setEditMortificacion('');
     setEditPresenciaDios('');
@@ -89,7 +90,7 @@ export default function HomeScreen() {
   const handleEdit = (message: Message) => {
     setEditingMessage(message);
     setEditDate(message.date);
-    setEditExamenParticular(message.examenParticular);
+    setEditPuntoLucha(message.puntoLucha);
     setEditPlanVida(message.planVida);
     setEditMortificacion(message.mortificacion);
     setEditPresenciaDios(message.presenciaDios);
@@ -110,7 +111,6 @@ export default function HomeScreen() {
             ? { 
                 ...msg, 
                 date: editDate,
-                examenParticular: editExamenParticular.trim(),
                 planVida: editPlanVida.trim(),
                 mortificacion: editMortificacion.trim(),
                 presenciaDios: editPresenciaDios.trim(),
@@ -120,6 +120,7 @@ export default function HomeScreen() {
                 familia: editFamilia.trim(),
                 pobrezaGenerosidad: editPobrezaGenerosidad.trim(),
                 preocupaciones: editPreocupaciones.trim(),
+                puntoLucha: editPuntoLucha.trim(),
                 timestamp: new Date() 
               }
             : msg
@@ -129,7 +130,6 @@ export default function HomeScreen() {
         setMessages([...messages, {
           id: editingMessage.id,
           date: editDate,
-          examenParticular: editExamenParticular.trim(),
           planVida: editPlanVida.trim(),
           mortificacion: editMortificacion.trim(),
           presenciaDios: editPresenciaDios.trim(),
@@ -139,6 +139,7 @@ export default function HomeScreen() {
           familia: editFamilia.trim(),
           pobrezaGenerosidad: editPobrezaGenerosidad.trim(),
           preocupaciones: editPreocupaciones.trim(),
+          puntoLucha: editPuntoLucha.trim(),
           timestamp: editingMessage.timestamp,
         }]);
       }
@@ -188,6 +189,23 @@ export default function HomeScreen() {
     }, [])
   );
 
+  const getPreviousPuntoLucha = () => {
+    if (!editingMessage) return null;
+    // Sort messages by date ascending
+    const sorted = [...messages].sort((a, b) => a.date.getTime() - b.date.getTime());
+    // Find the index of the current editing message (by id)
+    const idx = sorted.findIndex(msg => msg.id === editingMessage.id);
+    // If creating a new note (not found), use the last note as previous
+    if (idx === -1) {
+      return sorted.length > 0 ? sorted[sorted.length - 1].puntoLucha : null;
+    }
+    // Otherwise, use the previous note if it exists
+    if (idx > 0) {
+      return sorted[idx - 1].puntoLucha;
+    }
+    return null;
+  };
+
   return (
     <KeyboardAvoidingView 
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -195,14 +213,6 @@ export default function HomeScreen() {
     >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <ThemedView style={styles.container}>
-          {messages.length > 0 && (
-            <View style={styles.headerContainer}>
-              <ThemedText style={styles.headerTitle}>
-                {messages.sort((a, b) => b.date.getTime() - a.date.getTime())[0].examenParticular}
-              </ThemedText>
-            </View>
-          )}
-
           <TouchableOpacity 
             style={[
               styles.fab,
@@ -216,199 +226,218 @@ export default function HomeScreen() {
             </View>
           </TouchableOpacity>
 
-          <FlatList
-            data={[...messages].sort((a, b) => b.date.getTime() - a.date.getTime())}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
-              <View style={styles.noteContainer}>
-                <Pressable 
-                  style={styles.noteContent}
-                  onPress={() => handleEdit(item)}
-                >
-                  <ThemedText style={styles.dateText}>
-                    {item.date.toLocaleDateString()}
-                  </ThemedText>
-                  {item.examenParticular.trim() && (
-                    <>
-                      <View style={styles.labelContainer}>
+          <TouchableWithoutFeedback onPress={() => setSelectedNoteId(null)}>
+            <View style={{ flex: 1 }}>
+              <FlatList
+                data={[...messages].sort((a, b) => b.date.getTime() - a.date.getTime())}
+                keyExtractor={(item) => item.id}
+                renderItem={({ item }) => (
+                  <View style={styles.noteContainer}>
+                    <Pressable
+                      style={[
+                        styles.noteContent,
+                        selectedNoteId === item.id && styles.noteContentSelected
+                      ]}
+                      onPress={() => {
+                        setSelectedNoteId(null);
+                        handleEdit(item);
+                      }}
+                      onLongPress={() => {
+                        if (selectedNoteId === item.id) {
+                          setSelectedNoteId(null);
+                        } else {
+                          setSelectedNoteId(item.id);
+                        }
+                      }}
+                    >
+                      <ThemedText style={styles.dateText}>
+                        {item.date.toLocaleDateString()}
+                      </ThemedText>
+                      {item.planVida.trim() && (
+                        <>
+                          <View style={styles.labelContainer}>
+                            <TouchableOpacity 
+                              onPress={() => handleInfoPress('planVida')}
+                              disabled={editPlanVida.trim().length > 0}
+                            >
+                              <ThemedText style={[
+                                styles.label,
+                                editPlanVida.trim().length > 0 && styles.labelDisabled
+                              ]}>Plan de vida y trato con el Señor:</ThemedText>
+                            </TouchableOpacity>
+                          </View>
+                          <ThemedText style={styles.messageText}>{item.planVida}</ThemedText>
+                        </>
+                      )}
+                      {item.mortificacion.trim() && (
+                        <>
+                          <View style={styles.labelContainer}>
+                            <TouchableOpacity 
+                              onPress={() => handleInfoPress('mortificacion')}
+                              disabled={editMortificacion.trim().length > 0}
+                            >
+                              <ThemedText style={[
+                                styles.label,
+                                editMortificacion.trim().length > 0 && styles.labelDisabled
+                              ]}>Mortificación y espíritu de sacrificio. Carácter:</ThemedText>
+                            </TouchableOpacity>
+                          </View>
+                          <ThemedText style={styles.messageText}>{item.mortificacion}</ThemedText>
+                        </>
+                      )}
+                      {item.presenciaDios.trim() && (
+                        <>
+                          <View style={styles.labelContainer}>
+                            <TouchableOpacity 
+                              onPress={() => handleInfoPress('presenciaDios')}
+                              disabled={editPresenciaDios.trim().length > 0}
+                            >
+                              <ThemedText style={[
+                                styles.label,
+                                editPresenciaDios.trim().length > 0 && styles.labelDisabled
+                              ]}>Presencia de Dios y aprovechamiento del tiempo:</ThemedText>
+                            </TouchableOpacity>
+                          </View>
+                          <ThemedText style={styles.messageText}>{item.presenciaDios}</ThemedText>
+                        </>
+                      )}
+                      {item.fePurezaVocacion.trim() && (
+                        <>
+                          <View style={styles.labelContainer}>
+                            <TouchableOpacity 
+                              onPress={() => handleInfoPress('fePurezaVocacion')}
+                              disabled={editFePurezaVocacion.trim().length > 0}
+                            >
+                              <ThemedText style={[
+                                styles.label,
+                                editFePurezaVocacion.trim().length > 0 && styles.labelDisabled
+                              ]}>Fe / Pureza / Vocación:</ThemedText>
+                            </TouchableOpacity>
+                          </View>
+                          <ThemedText style={styles.messageText}>{item.fePurezaVocacion}</ThemedText>
+                        </>
+                      )}
+                      {item.trabajoEstudio.trim() && (
+                        <>
+                          <View style={styles.labelContainer}>
+                            <TouchableOpacity 
+                              onPress={() => handleInfoPress('trabajoEstudio')}
+                              disabled={editTrabajoEstudio.trim().length > 0}
+                            >
+                              <ThemedText style={[
+                                styles.label,
+                                editTrabajoEstudio.trim().length > 0 && styles.labelDisabled
+                              ]}>Trabajo / Estudio:</ThemedText>
+                            </TouchableOpacity>
+                          </View>
+                          <ThemedText style={styles.messageText}>{item.trabajoEstudio}</ThemedText>
+                        </>
+                      )}
+                      {item.fraternidad.trim() && (
+                        <>
+                          <View style={styles.labelContainer}>
+                            <TouchableOpacity 
+                              onPress={() => handleInfoPress('fraternidad')}
+                              disabled={editFraternidad.trim().length > 0}
+                            >
+                              <ThemedText style={[
+                                styles.label,
+                                editFraternidad.trim().length > 0 && styles.labelDisabled
+                              ]}>Fraternidad, amigos y apostolado:</ThemedText>
+                            </TouchableOpacity>
+                          </View>
+                          <ThemedText style={styles.messageText}>{item.fraternidad}</ThemedText>
+                        </>
+                      )}
+                      {item.familia.trim() && (
+                        <>
+                          <View style={styles.labelContainer}>
+                            <TouchableOpacity 
+                              onPress={() => handleInfoPress('familia')}
+                              disabled={editFamilia.trim().length > 0}
+                            >
+                              <ThemedText style={[
+                                styles.label,
+                                editFamilia.trim().length > 0 && styles.labelDisabled
+                              ]}>Familia:</ThemedText>
+                            </TouchableOpacity>
+                          </View>
+                          <ThemedText style={styles.messageText}>{item.familia}</ThemedText>
+                        </>
+                      )}
+                      {item.pobrezaGenerosidad.trim() && (
+                        <>
+                          <View style={styles.labelContainer}>
+                            <TouchableOpacity 
+                              onPress={() => handleInfoPress('pobrezaGenerosidad')}
+                              disabled={editPobrezaGenerosidad.trim().length > 0}
+                            >
+                              <ThemedText style={[
+                                styles.label,
+                                editPobrezaGenerosidad.trim().length > 0 && styles.labelDisabled
+                              ]}>Pobreza y generosidad:</ThemedText>
+                            </TouchableOpacity>
+                          </View>
+                          <ThemedText style={styles.messageText}>{item.pobrezaGenerosidad}</ThemedText>
+                        </>
+                      )}
+                      {item.preocupaciones.trim() && (
+                        <>
+                          <View style={styles.labelContainer}>
+                            <TouchableOpacity 
+                              onPress={() => handleInfoPress('preocupaciones')}
+                              disabled={editPreocupaciones.trim().length > 0}
+                            >
+                              <ThemedText style={[
+                                styles.label,
+                                editPreocupaciones.trim().length > 0 && styles.labelDisabled
+                              ]}>Preocupaciones, tristezas, alegrías y preguntas:</ThemedText>
+                            </TouchableOpacity>
+                          </View>
+                          <ThemedText style={styles.messageText}>{item.preocupaciones}</ThemedText>
+                        </>
+                      )}
+                      {item.puntoLucha.trim() && (
+                        <>
+                          <View style={styles.labelContainer}>
+                            <TouchableOpacity 
+                              onPress={() => handleInfoPress('puntoLucha')}
+                              disabled={editPuntoLucha.trim().length > 0}
+                            >
+                              <ThemedText style={[
+                                styles.label,
+                                editPuntoLucha.trim().length > 0 && styles.labelDisabled
+                              ]}>Punto de lucha:</ThemedText>
+                            </TouchableOpacity>
+                          </View>
+                          <ThemedText style={styles.messageText}>{item.puntoLucha}</ThemedText>
+                        </>
+                      )}
+                      {selectedNoteId === item.id && (
                         <TouchableOpacity 
-                          onPress={() => handleInfoPress('examenParticular')}
-                          disabled={editExamenParticular.trim().length > 0}
+                          style={styles.deleteButton}
+                          onPress={() => handleDelete(item.id)}
                         >
-                          <ThemedText style={[
-                            styles.label,
-                            editExamenParticular.trim().length > 0 && styles.labelDisabled
-                          ]}>Examen Particular:</ThemedText>
+                          <IconSymbol
+                            name="trash.fill"
+                            size={20}
+                            color={Colors[colorScheme ?? 'light'].text}
+                          />
                         </TouchableOpacity>
-                      </View>
-                      <ThemedText style={styles.messageText}>{item.examenParticular}</ThemedText>
-                    </>
-                  )}
-                  {item.planVida.trim() && (
-                    <>
-                      <View style={styles.labelContainer}>
-                        <TouchableOpacity 
-                          onPress={() => handleInfoPress('planVida')}
-                          disabled={editPlanVida.trim().length > 0}
-                        >
-                          <ThemedText style={[
-                            styles.label,
-                            editPlanVida.trim().length > 0 && styles.labelDisabled
-                          ]}>Plan de vida y trato con el Señor:</ThemedText>
-                        </TouchableOpacity>
-                      </View>
-                      <ThemedText style={styles.messageText}>{item.planVida}</ThemedText>
-                    </>
-                  )}
-                  {item.mortificacion.trim() && (
-                    <>
-                      <View style={styles.labelContainer}>
-                        <TouchableOpacity 
-                          onPress={() => handleInfoPress('mortificacion')}
-                          disabled={editMortificacion.trim().length > 0}
-                        >
-                          <ThemedText style={[
-                            styles.label,
-                            editMortificacion.trim().length > 0 && styles.labelDisabled
-                          ]}>Mortificación y espíritu de sacrificio. Carácter:</ThemedText>
-                        </TouchableOpacity>
-                      </View>
-                      <ThemedText style={styles.messageText}>{item.mortificacion}</ThemedText>
-                    </>
-                  )}
-                  {item.presenciaDios.trim() && (
-                    <>
-                      <View style={styles.labelContainer}>
-                        <TouchableOpacity 
-                          onPress={() => handleInfoPress('presenciaDios')}
-                          disabled={editPresenciaDios.trim().length > 0}
-                        >
-                          <ThemedText style={[
-                            styles.label,
-                            editPresenciaDios.trim().length > 0 && styles.labelDisabled
-                          ]}>Presencia de Dios y aprovechamiento del tiempo:</ThemedText>
-                        </TouchableOpacity>
-                      </View>
-                      <ThemedText style={styles.messageText}>{item.presenciaDios}</ThemedText>
-                    </>
-                  )}
-                  {item.fePurezaVocacion.trim() && (
-                    <>
-                      <View style={styles.labelContainer}>
-                        <TouchableOpacity 
-                          onPress={() => handleInfoPress('fePurezaVocacion')}
-                          disabled={editFePurezaVocacion.trim().length > 0}
-                        >
-                          <ThemedText style={[
-                            styles.label,
-                            editFePurezaVocacion.trim().length > 0 && styles.labelDisabled
-                          ]}>Fe / Pureza / Vocación:</ThemedText>
-                        </TouchableOpacity>
-                      </View>
-                      <ThemedText style={styles.messageText}>{item.fePurezaVocacion}</ThemedText>
-                    </>
-                  )}
-                  {item.trabajoEstudio.trim() && (
-                    <>
-                      <View style={styles.labelContainer}>
-                        <TouchableOpacity 
-                          onPress={() => handleInfoPress('trabajoEstudio')}
-                          disabled={editTrabajoEstudio.trim().length > 0}
-                        >
-                          <ThemedText style={[
-                            styles.label,
-                            editTrabajoEstudio.trim().length > 0 && styles.labelDisabled
-                          ]}>Trabajo / Estudio:</ThemedText>
-                        </TouchableOpacity>
-                      </View>
-                      <ThemedText style={styles.messageText}>{item.trabajoEstudio}</ThemedText>
-                    </>
-                  )}
-                  {item.fraternidad.trim() && (
-                    <>
-                      <View style={styles.labelContainer}>
-                        <TouchableOpacity 
-                          onPress={() => handleInfoPress('fraternidad')}
-                          disabled={editFraternidad.trim().length > 0}
-                        >
-                          <ThemedText style={[
-                            styles.label,
-                            editFraternidad.trim().length > 0 && styles.labelDisabled
-                          ]}>Fraternidad, amigos y apostolado:</ThemedText>
-                        </TouchableOpacity>
-                      </View>
-                      <ThemedText style={styles.messageText}>{item.fraternidad}</ThemedText>
-                    </>
-                  )}
-                  {item.familia.trim() && (
-                    <>
-                      <View style={styles.labelContainer}>
-                        <TouchableOpacity 
-                          onPress={() => handleInfoPress('familia')}
-                          disabled={editFamilia.trim().length > 0}
-                        >
-                          <ThemedText style={[
-                            styles.label,
-                            editFamilia.trim().length > 0 && styles.labelDisabled
-                          ]}>Familia:</ThemedText>
-                        </TouchableOpacity>
-                      </View>
-                      <ThemedText style={styles.messageText}>{item.familia}</ThemedText>
-                    </>
-                  )}
-                  {item.pobrezaGenerosidad.trim() && (
-                    <>
-                      <View style={styles.labelContainer}>
-                        <TouchableOpacity 
-                          onPress={() => handleInfoPress('pobrezaGenerosidad')}
-                          disabled={editPobrezaGenerosidad.trim().length > 0}
-                        >
-                          <ThemedText style={[
-                            styles.label,
-                            editPobrezaGenerosidad.trim().length > 0 && styles.labelDisabled
-                          ]}>Pobreza y generosidad:</ThemedText>
-                        </TouchableOpacity>
-                      </View>
-                      <ThemedText style={styles.messageText}>{item.pobrezaGenerosidad}</ThemedText>
-                    </>
-                  )}
-                  {item.preocupaciones.trim() && (
-                    <>
-                      <View style={styles.labelContainer}>
-                        <TouchableOpacity 
-                          onPress={() => handleInfoPress('preocupaciones')}
-                          disabled={editPreocupaciones.trim().length > 0}
-                        >
-                          <ThemedText style={[
-                            styles.label,
-                            editPreocupaciones.trim().length > 0 && styles.labelDisabled
-                          ]}>Preocupaciones, tristezas, alegrías y preguntas:</ThemedText>
-                        </TouchableOpacity>
-                      </View>
-                      <ThemedText style={styles.messageText}>{item.preocupaciones}</ThemedText>
-                    </>
-                  )}
-                  <TouchableOpacity 
-                    style={styles.deleteButton}
-                    onPress={() => handleDelete(item.id)}
-                  >
-                    <IconSymbol
-                      name="trash.fill"
-                      size={20}
-                      color={Colors[colorScheme ?? 'light'].text}
-                    />
-                  </TouchableOpacity>
-                </Pressable>
-              </View>
-            )}
-            ItemSeparatorComponent={() => (
-              <View style={[
-                styles.separator,
-                { backgroundColor: Colors[colorScheme ?? 'light'].tabIconDefault }
-              ]} />
-            )}
-            style={styles.messageList}
-          />
+                      )}
+                    </Pressable>
+                  </View>
+                )}
+                ItemSeparatorComponent={() => (
+                  <View style={[
+                    styles.separator,
+                    { backgroundColor: Colors[colorScheme ?? 'light'].tabIconDefault }
+                  ]} />
+                )}
+                style={styles.messageList}
+              />
+            </View>
+          </TouchableWithoutFeedback>
 
           <Modal
             animationType="slide"
@@ -421,6 +450,14 @@ export default function HomeScreen() {
               style={{ flex: 1 }}
             >
               <ThemedView style={styles.modalContent}>
+                {getPreviousPuntoLucha() && (
+                  <ThemedText style={[
+                    styles.previousPuntoLuchaText,
+                    { color: Colors[colorScheme ?? 'light'].text }
+                  ]}>
+                    Anterior punto de lucha: {getPreviousPuntoLucha()}
+                  </ThemedText>
+                )}
                 <View style={styles.modalHeader}>
                   <TouchableOpacity 
                     style={styles.closeButton}
@@ -451,31 +488,6 @@ export default function HomeScreen() {
 
                   <View style={styles.labelContainer}>
                     <TouchableOpacity 
-                      onPress={() => handleInfoPress('examenParticular')}
-                      disabled={editExamenParticular.trim().length > 0}
-                    >
-                      <ThemedText style={[
-                        styles.label,
-                        editExamenParticular.trim().length > 0 && styles.labelDisabled
-                      ]}>Examen Particular:</ThemedText>
-                    </TouchableOpacity>
-                  </View>
-                  <TextInput
-                    ref={planInputRef}
-                    style={[
-                      styles.editInput,
-                      { color: Colors[colorScheme ?? 'light'].text }
-                    ]}
-                    value={editExamenParticular}
-                    onChangeText={setEditExamenParticular}
-                    multiline={true}
-                    autoFocus={true}
-                    placeholder={activePlaceholder === 'examenParticular' ? descriptions.examenParticular : "Buscando a San Ignacio de Loyola..."}
-                    placeholderTextColor={Colors[colorScheme ?? 'light'].tabIconDefault}
-                  />
-
-                  <View style={styles.labelContainer}>
-                    <TouchableOpacity 
                       onPress={() => handleInfoPress('planVida')}
                       disabled={editPlanVida.trim().length > 0}
                     >
@@ -486,6 +498,7 @@ export default function HomeScreen() {
                     </TouchableOpacity>
                   </View>
                   <TextInput
+                    ref={planInputRef}
                     style={[
                       styles.editInput,
                       { color: Colors[colorScheme ?? 'light'].text }
@@ -493,6 +506,7 @@ export default function HomeScreen() {
                     value={editPlanVida}
                     onChangeText={setEditPlanVida}
                     multiline={true}
+                    autoFocus={true}
                     placeholder={activePlaceholder === 'planVida' ? descriptions.planVida : "Pensando en Santa Teresa de Ávila..."}
                     placeholderTextColor={Colors[colorScheme ?? 'light'].tabIconDefault}
                   />
@@ -608,7 +622,7 @@ export default function HomeScreen() {
                     value={editFraternidad}
                     onChangeText={setEditFraternidad}
                     multiline={true}
-                    placeholder={activePlaceholder === 'fraternidad' ? descriptions.fraternidad : "Al estilo deSan Juan Bosco..."}
+                    placeholder={activePlaceholder === 'fraternidad' ? descriptions.fraternidad : "Al estilo de San Juan Bosco..."}
                     placeholderTextColor={Colors[colorScheme ?? 'light'].tabIconDefault}
                   />
 
@@ -680,6 +694,29 @@ export default function HomeScreen() {
                     placeholder={activePlaceholder === 'preocupaciones' ? descriptions.preocupaciones : "Confiando como Santa Teresita del Niño Jesús..."}
                     placeholderTextColor={Colors[colorScheme ?? 'light'].tabIconDefault}
                   />
+
+                  <View style={styles.labelContainer}>
+                    <TouchableOpacity 
+                      onPress={() => handleInfoPress('puntoLucha')}
+                      disabled={editPuntoLucha.trim().length > 0}
+                    >
+                      <ThemedText style={[
+                        styles.label,
+                        editPuntoLucha.trim().length > 0 && styles.labelDisabled
+                      ]}>Punto de lucha:</ThemedText>
+                    </TouchableOpacity>
+                  </View>
+                  <TextInput
+                    style={[
+                      styles.editInput,
+                      { color: Colors[colorScheme ?? 'light'].text }
+                    ]}
+                    value={editPuntoLucha}
+                    onChangeText={setEditPuntoLucha}
+                    multiline={true}
+                    placeholder={activePlaceholder === 'puntoLucha' ? descriptions.puntoLucha : "Acompañando a San Ignacio de Loyola..."}
+                    placeholderTextColor={Colors[colorScheme ?? 'light'].tabIconDefault}
+                  />
                 </ScrollView>
               </ThemedView>
             </KeyboardAvoidingView>
@@ -698,9 +735,9 @@ const styles = StyleSheet.create({
   fab: {
     position: 'absolute',
     right: 20,
-    top: 80,
-    width: 50,
-    height: 50,
+    bottom: 32,
+    width: 56,
+    height: 56,
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
@@ -723,6 +760,10 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: 'rgba(0, 255, 255, 0.05)',
     position: 'relative',
+  },
+  noteContentSelected: {
+    borderWidth: 2,
+    borderColor: 'aqua',
   },
   dateText: {
     fontSize: 16,
@@ -790,8 +831,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   plusSign: {
-    width: 24,
-    height: 24,
+    width: 20,
+    height: 20,
     position: 'relative',
   },
   plusVertical: {
@@ -815,8 +856,8 @@ const styles = StyleSheet.create({
   },
   deleteButton: {
     position: 'absolute',
-    bottom: 8,
-    right: 8,
+    top: 8,
+    right: 10,
     padding: 8,
   },
   formScrollView: {
@@ -825,22 +866,11 @@ const styles = StyleSheet.create({
   formScrollViewContent: {
     paddingBottom: 20,
   },
-  headerContainer: {
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0, 255, 255, 0.2)',
-    marginBottom: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerTitle: {
-    fontSize: 24,
+  previousPuntoLuchaText: {
+    fontSize: 16,
+    marginBottom: 12,
+    fontStyle: 'italic',
+    paddingTop: 18,
     fontWeight: 'bold',
-    textAlign: 'center',
-    lineHeight: 32,
-  },
-  headerContent: {
-    fontSize: 14,
-    lineHeight: 20,
   },
 }); 
