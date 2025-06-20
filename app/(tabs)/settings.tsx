@@ -1,42 +1,89 @@
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { Colors } from '@/constants/Colors';
+import { defaultFields } from '@/constants/Fields';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import React from 'react';
-import { StyleSheet, TouchableOpacity, View } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { useEffect, useState } from 'react';
+import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 export default function SettingsScreen() {
   const colorScheme = useColorScheme();
+  const [visibleFields, setVisibleFields] = useState<Record<number, boolean>>({});
+
+  useEffect(() => {
+    loadVisibleFields();
+  }, []);
+
+  const loadVisibleFields = async () => {
+    try {
+      const saved = await AsyncStorage.getItem('visibleFields');
+      if (saved) {
+        setVisibleFields(JSON.parse(saved));
+      } else {
+        // Default: all fields visible
+        const defaultVisible = defaultFields.reduce((acc, field) => {
+          acc[field.id] = true;
+          return acc;
+        }, {} as Record<number, boolean>);
+        setVisibleFields(defaultVisible);
+        await AsyncStorage.setItem('visibleFields', JSON.stringify(defaultVisible));
+      }
+    } catch (error) {
+      console.error('Error loading visible fields:', error);
+    }
+  };
+
+  const toggleField = async (fieldId: number) => {
+    const newVisibleFields = {
+      ...visibleFields,
+      [fieldId]: !visibleFields[fieldId]
+    };
+    setVisibleFields(newVisibleFields);
+    try {
+      await AsyncStorage.setItem('visibleFields', JSON.stringify(newVisibleFields));
+    } catch (error) {
+      console.error('Error saving visible fields:', error);
+    }
+  };
 
   return (
     <ThemedView style={styles.container}>
-      <View style={styles.section}>
-        <ThemedText style={styles.sectionTitle}>Appearance</ThemedText>
-        <TouchableOpacity 
-          style={[
-            styles.option,
-            { backgroundColor: Colors[colorScheme ?? 'light'].background }
-          ]}
-        >
-          <ThemedText style={styles.optionText}>Theme</ThemedText>
-          <ThemedText style={styles.optionValue}>
-            {colorScheme === 'dark' ? 'Dark' : 'Light'}
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollViewContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.section}>
+          <ThemedText style={styles.sectionTitle}>Field Visibility</ThemedText>
+          <ThemedText style={styles.sectionDescription}>
+            Choose which fields to show in your notes. Hidden fields will not display but your data will be preserved.
           </ThemedText>
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.section}>
-        <ThemedText style={styles.sectionTitle}>About</ThemedText>
-        <TouchableOpacity 
-          style={[
-            styles.option,
-            { backgroundColor: Colors[colorScheme ?? 'light'].background }
-          ]}
-        >
-          <ThemedText style={styles.optionText}>Version</ThemedText>
-          <ThemedText style={styles.optionValue}>1.0.0</ThemedText>
-        </TouchableOpacity>
-      </View>
+          {defaultFields.map((field) => (
+            <TouchableOpacity 
+              key={field.id}
+              style={[
+                styles.fieldOption,
+                { backgroundColor: Colors[colorScheme ?? 'light'].background }
+              ]}
+              onPress={() => toggleField(field.id)}
+            >
+              <View style={styles.checkboxContainer}>
+                <View style={[
+                  styles.checkbox,
+                  visibleFields[field.id] && styles.checkboxChecked,
+                  { borderColor: Colors[colorScheme ?? 'light'].text }
+                ]}>
+                  {visibleFields[field.id] && (
+                    <ThemedText style={styles.checkmark}>✓</ThemedText>
+                  )}
+                </View>
+              </View>
+              <ThemedText style={styles.fieldLabel}>{field.label}</ThemedText>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </ScrollView>
     </ThemedView>
   );
 }
@@ -44,8 +91,14 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
     paddingTop: 60,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollViewContent: {
+    padding: 16,
+    paddingBottom: 32,
   },
   section: {
     marginBottom: 24,
@@ -55,19 +108,43 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 12,
   },
-  option: {
+  sectionDescription: {
+    fontSize: 14,
+    opacity: 0.7,
+    marginBottom: 16,
+    lineHeight: 20,
+  },
+  fieldOption: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
     padding: 16,
     borderRadius: 12,
     marginBottom: 8,
   },
-  optionText: {
-    fontSize: 16,
+  checkboxContainer: {
+    marginRight: 12,
   },
-  optionValue: {
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderWidth: 2,
+    borderRadius: 4,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkboxChecked: {
+    backgroundColor: '#007AFF',
+    borderColor: '#007AFF',
+  },
+  checkmark: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    lineHeight: 16,
+  },
+  fieldLabel: {
     fontSize: 16,
-    opacity: 0.6,
+    flex: 1,
   },
 }); 

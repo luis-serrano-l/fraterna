@@ -2,6 +2,7 @@ import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { Colors } from '@/constants/Colors';
+import { defaultFields, personalQuestions } from '@/constants/Fields';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -9,154 +10,95 @@ import { useFocusEffect } from '@react-navigation/native';
 import React, { useEffect, useRef, useState } from 'react';
 import { Alert, FlatList, Keyboard, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 
+// Dynamic Message type based on field configuration
 type Message = {
   id: string;
   date: Date;
-  planVida: string;
-  mortificacion: string;
-  presenciaDios: string;
-  fePurezaVocacion: string;
-  trabajoEstudio: string;
-  fraternidad: string;
-  familia: string;
-  pobrezaGenerosidad: string;
-  preocupaciones: string;
-  puntoLucha: string;
   timestamp: Date;
+} & {
+  [K in typeof defaultFields[number]['key']]: string;
 };
 
-const descriptions = {
-  planVida: "Plan de vida y trato con el Señor",
-  mortificacion: "Mortificación y espíritu de sacrificio",
-  presenciaDios: "Presencia de Dios y aprovechamiento del tiempo",
-  fePurezaVocacion: "Fe, pureza y vocación",
-  trabajoEstudio: "Trabajo y estudio",
-  fraternidad: "Fraternidad, amigos y apostolado",
-  familia: "Familia",
-  pobrezaGenerosidad: "Pobreza y generosidad",
-  preocupaciones: "Preocupaciones, tristezas, alegrías y preguntas",
-  puntoLucha: "Punto de lucha",
+// Dynamic edit state type
+type EditState = {
+  [K in typeof defaultFields[number]['key']]: string;
 };
-
-const mortificacionText = `1. ¿En qué medida mi alma se deja llevar por la tendencia natural a rechazar lo que supone contrariedad, cediendo al ambiente hedonista que nos rodea?
-Conviene examinar con sinceridad si en el cumplimiento de los deberes ingratos, en la puntualidad, en el orden, o en el vencimiento de la pereza que busca mil excusas, se manifiesta verdadero señorío sobrenatural sobre las cosas creadas, o si, por el contrario, el alma queda prisionera del desorden.
-
-2. ¿Está arraigada en mi alma la costumbre estable del espíritu de mortificación, o se trata más bien de actos esporádicos sin continuidad?
-Es preciso considerar si se ha formado ese hábito de la negación a uno mismo que ha de estar presente desde los comienzos hasta el final, manifestándose en toda la vida, aunque se actualice en momentos concretos, especialmente en las relaciones con quienes están más cerca.
-
-3. ¿Acepto las mortificaciones pasivas con verdadero espíritu sobrenatural, o me dejo vencer por las quejas y la falta de paz interior?
-Importa mucho examinar la actitud ante la enfermedad y el dolor, los imprevistos que aparecen en el trabajo, en la vida familiar, en los proyectos que teníamos para ese día, preguntándose si se reciben como ocasión de unirse a Cristo en la Cruz.
-
-4. ¿Llevo a cabo con esmero la mortificación interior, apartando pensamientos y recuerdos inútiles que impiden el hábito de la presencia de Dios?
-Es necesario considerar si el alma se refugia en esa interioridad irreal y fantástica donde la vanidad sale siempre triunfante, o si, por el contrario, mantiene el corazón libre de ataduras para que pueda subir hasta el Señor sin impedimentos.
-
-5. ¿Comprendo que sin mortificación no hay progreso en la vida interior, o me dejo influir por la mentalidad que ve en la negación algo de épocas oscuras y tristes?
-Conviene preguntarse si se tiene clara conciencia de que la mortificación no es simple privación, sino manifestación de amor, deseo de estar mejor dispuestos para tratar a Dios, y el puente levadizo que facilita la entrada en el castillo de la oración.`;
 
 export default function HomeScreen() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [editingMessage, setEditingMessage] = useState<Message | null>(null);
   const [editDate, setEditDate] = useState(new Date());
-  const [editPuntoLucha, setEditPuntoLucha] = useState('');
-  const [editPlanVida, setEditPlanVida] = useState('');
-  const [editMortificacion, setEditMortificacion] = useState('');
-  const [editPresenciaDios, setEditPresenciaDios] = useState('');
-  const [editFePurezaVocacion, setEditFePurezaVocacion] = useState('');
-  const [editTrabajoEstudio, setEditTrabajoEstudio] = useState('');
-  const [editFraternidad, setEditFraternidad] = useState('');
-  const [editFamilia, setEditFamilia] = useState('');
-  const [editPobrezaGenerosidad, setEditPobrezaGenerosidad] = useState('');
-  const [editPreocupaciones, setEditPreocupaciones] = useState('');
+  const [editState, setEditState] = useState<EditState>(() => {
+    // Initialize edit state with empty strings for all fields
+    const initialState = {} as EditState;
+    defaultFields.forEach(field => {
+      initialState[field.key] = '';
+    });
+    return initialState;
+  });
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [visibleFields, setVisibleFields] = useState<Record<number, boolean>>({});
   const colorScheme = useColorScheme();
   const planInputRef = useRef<TextInput>(null);
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
 
   const handleNewNote = () => {
     const newDate = new Date();
-    setEditingMessage({
+    const newMessage = {
       id: Date.now().toString(),
       date: newDate,
-      planVida: '',
-      mortificacion: '',
-      presenciaDios: '',
-      fePurezaVocacion: '',
-      trabajoEstudio: '',
-      fraternidad: '',
-      familia: '',
-      pobrezaGenerosidad: '',
-      preocupaciones: '',
-      puntoLucha: '',
       timestamp: newDate,
+    } as Message;
+    
+    // Initialize all fields with empty strings
+    defaultFields.forEach(field => {
+      newMessage[field.key] = '';
     });
+    
+    setEditingMessage(newMessage);
     setEditDate(newDate);
-    setEditPuntoLucha('');
-    setEditPlanVida('');
-    setEditMortificacion('');
-    setEditPresenciaDios('');
-    setEditFePurezaVocacion('');
-    setEditTrabajoEstudio('');
-    setEditFraternidad('');
-    setEditFamilia('');
-    setEditPobrezaGenerosidad('');
-    setEditPreocupaciones('');
+    
+    // Reset edit state
+    const resetState = {} as EditState;
+    defaultFields.forEach(field => {
+      resetState[field.key] = '';
+    });
+    setEditState(resetState);
   };
 
   const handleEdit = (message: Message) => {
     setEditingMessage(message);
     setEditDate(message.date);
-    setEditPuntoLucha(message.puntoLucha);
-    setEditPlanVida(message.planVida);
-    setEditMortificacion(message.mortificacion);
-    setEditPresenciaDios(message.presenciaDios);
-    setEditFePurezaVocacion(message.fePurezaVocacion);
-    setEditTrabajoEstudio(message.trabajoEstudio);
-    setEditFraternidad(message.fraternidad);
-    setEditFamilia(message.familia);
-    setEditPobrezaGenerosidad(message.pobrezaGenerosidad);
-    setEditPreocupaciones(message.preocupaciones);
+    
+    // Set edit state from message
+    const newEditState = {} as EditState;
+    defaultFields.forEach(field => {
+      newEditState[field.key] = message[field.key] || '';
+    });
+    setEditState(newEditState);
   };
 
   const handleSaveEdit = () => {
     if (editingMessage) {
+      const updatedMessage = {
+        ...editingMessage,
+        date: editDate,
+        timestamp: new Date(),
+      } as Message;
+      
+      // Update all fields from edit state
+      defaultFields.forEach(field => {
+        updatedMessage[field.key] = editState[field.key].trim();
+      });
+      
       if (messages.some(msg => msg.id === editingMessage.id)) {
         // Update existing note
         setMessages(messages.map(msg => 
-          msg.id === editingMessage.id 
-            ? { 
-                ...msg, 
-                date: editDate,
-                planVida: editPlanVida.trim(),
-                mortificacion: editMortificacion.trim(),
-                presenciaDios: editPresenciaDios.trim(),
-                fePurezaVocacion: editFePurezaVocacion.trim(),
-                trabajoEstudio: editTrabajoEstudio.trim(),
-                fraternidad: editFraternidad.trim(),
-                familia: editFamilia.trim(),
-                pobrezaGenerosidad: editPobrezaGenerosidad.trim(),
-                preocupaciones: editPreocupaciones.trim(),
-                puntoLucha: editPuntoLucha.trim(),
-                timestamp: new Date() 
-              }
-            : msg
+          msg.id === editingMessage.id ? updatedMessage : msg
         ));
       } else {
         // Add new note
-        setMessages([...messages, {
-          id: editingMessage.id,
-          date: editDate,
-          planVida: editPlanVida.trim(),
-          mortificacion: editMortificacion.trim(),
-          presenciaDios: editPresenciaDios.trim(),
-          fePurezaVocacion: editFePurezaVocacion.trim(),
-          trabajoEstudio: editTrabajoEstudio.trim(),
-          fraternidad: editFraternidad.trim(),
-          familia: editFamilia.trim(),
-          pobrezaGenerosidad: editPobrezaGenerosidad.trim(),
-          preocupaciones: editPreocupaciones.trim(),
-          puntoLucha: editPuntoLucha.trim(),
-          timestamp: editingMessage.timestamp,
-        }]);
+        setMessages([...messages, updatedMessage]);
       }
       setEditingMessage(null);
     }
@@ -191,15 +133,25 @@ export default function HomeScreen() {
     );
   };
 
-  const handleInfoPress = (key: keyof typeof descriptions) => {
-    if (key === 'mortificacion') {
+  const handleInfoPress = (fieldId: number) => {
+    const questionText = personalQuestions[fieldId];
+    if (questionText) {
+      const field = defaultFields.find(f => f.id === fieldId);
+      const title = field ? field.label.replace(':', '') : 'Field Information';
       Alert.alert(
-        'Mortificación y espíritu de sacrificio',
-        mortificacionText,
+        title,
+        questionText,
         [{ text: 'OK' }],
         { cancelable: true }
       );
     }
+  };
+
+  const updateEditField = (fieldKey: string, value: string) => {
+    setEditState(prev => ({
+      ...prev,
+      [fieldKey]: value
+    }));
   };
 
   useFocusEffect(
@@ -210,6 +162,31 @@ export default function HomeScreen() {
       return () => clearTimeout(timer);
     }, [])
   );
+
+  useFocusEffect(
+    React.useCallback(() => {
+      loadVisibleFields();
+    }, [])
+  );
+
+  const loadVisibleFields = async () => {
+    try {
+      const saved = await AsyncStorage.getItem('visibleFields');
+      if (saved) {
+        setVisibleFields(JSON.parse(saved));
+      } else {
+        // Default: all fields visible
+        const defaultVisible = defaultFields.reduce((acc, field) => {
+          acc[field.id] = true;
+          return acc;
+        }, {} as Record<number, boolean>);
+        setVisibleFields(defaultVisible);
+        await AsyncStorage.setItem('visibleFields', JSON.stringify(defaultVisible));
+      }
+    } catch (error) {
+      console.error('Error loading visible fields:', error);
+    }
+  };
 
   const getPreviousPuntoLucha = () => {
     if (!editingMessage) return null;
@@ -294,126 +271,28 @@ export default function HomeScreen() {
                       <ThemedText style={styles.dateText}>
                         {item.date.toLocaleDateString()}
                       </ThemedText>
-                      {item.planVida.trim() && (
-                        <>
-                          <View style={styles.labelContainer}>
-                            <TouchableOpacity 
-                              onPress={() => handleInfoPress('planVida')}
-                            >
-                              <ThemedText style={styles.label}>Plan de vida y trato con el Señor:</ThemedText>
-                            </TouchableOpacity>
-                          </View>
-                          <ThemedText style={styles.messageText}>{item.planVida}</ThemedText>
-                        </>
-                      )}
-                      {item.mortificacion.trim() && (
-                        <>
-                          <View style={styles.labelContainer}>
-                            <TouchableOpacity 
-                              onPress={() => handleInfoPress('mortificacion')}
-                            >
-                              <ThemedText style={styles.label}>Mortificación y espíritu de sacrificio. Carácter:</ThemedText>
-                            </TouchableOpacity>
-                          </View>
-                          <ThemedText style={styles.messageText}>{item.mortificacion}</ThemedText>
-                        </>
-                      )}
-                      {item.presenciaDios.trim() && (
-                        <>
-                          <View style={styles.labelContainer}>
-                            <TouchableOpacity 
-                              onPress={() => handleInfoPress('presenciaDios')}
-                            >
-                              <ThemedText style={styles.label}>Presencia de Dios y aprovechamiento del tiempo:</ThemedText>
-                            </TouchableOpacity>
-                          </View>
-                          <ThemedText style={styles.messageText}>{item.presenciaDios}</ThemedText>
-                        </>
-                      )}
-                      {item.fePurezaVocacion.trim() && (
-                        <>
-                          <View style={styles.labelContainer}>
-                            <TouchableOpacity 
-                              onPress={() => handleInfoPress('fePurezaVocacion')}
-                            >
-                              <ThemedText style={styles.label}>Fe / Pureza / Vocación:</ThemedText>
-                            </TouchableOpacity>
-                          </View>
-                          <ThemedText style={styles.messageText}>{item.fePurezaVocacion}</ThemedText>
-                        </>
-                      )}
-                      {item.trabajoEstudio.trim() && (
-                        <>
-                          <View style={styles.labelContainer}>
-                            <TouchableOpacity 
-                              onPress={() => handleInfoPress('trabajoEstudio')}
-                            >
-                              <ThemedText style={styles.label}>Trabajo / Estudio:</ThemedText>
-                            </TouchableOpacity>
-                          </View>
-                          <ThemedText style={styles.messageText}>{item.trabajoEstudio}</ThemedText>
-                        </>
-                      )}
-                      {item.fraternidad.trim() && (
-                        <>
-                          <View style={styles.labelContainer}>
-                            <TouchableOpacity 
-                              onPress={() => handleInfoPress('fraternidad')}
-                            >
-                              <ThemedText style={styles.label}>Fraternidad, amigos y apostolado:</ThemedText>
-                            </TouchableOpacity>
-                          </View>
-                          <ThemedText style={styles.messageText}>{item.fraternidad}</ThemedText>
-                        </>
-                      )}
-                      {item.familia.trim() && (
-                        <>
-                          <View style={styles.labelContainer}>
-                            <TouchableOpacity 
-                              onPress={() => handleInfoPress('familia')}
-                            >
-                              <ThemedText style={styles.label}>Familia:</ThemedText>
-                            </TouchableOpacity>
-                          </View>
-                          <ThemedText style={styles.messageText}>{item.familia}</ThemedText>
-                        </>
-                      )}
-                      {item.pobrezaGenerosidad.trim() && (
-                        <>
-                          <View style={styles.labelContainer}>
-                            <TouchableOpacity 
-                              onPress={() => handleInfoPress('pobrezaGenerosidad')}
-                            >
-                              <ThemedText style={styles.label}>Pobreza y generosidad:</ThemedText>
-                            </TouchableOpacity>
-                          </View>
-                          <ThemedText style={styles.messageText}>{item.pobrezaGenerosidad}</ThemedText>
-                        </>
-                      )}
-                      {item.preocupaciones.trim() && (
-                        <>
-                          <View style={styles.labelContainer}>
-                            <TouchableOpacity 
-                              onPress={() => handleInfoPress('preocupaciones')}
-                            >
-                              <ThemedText style={styles.label}>Preocupaciones, tristezas, alegrías y preguntas:</ThemedText>
-                            </TouchableOpacity>
-                          </View>
-                          <ThemedText style={styles.messageText}>{item.preocupaciones}</ThemedText>
-                        </>
-                      )}
-                      {item.puntoLucha.trim() && (
-                        <>
-                          <View style={styles.labelContainer}>
-                            <TouchableOpacity 
-                              onPress={() => handleInfoPress('puntoLucha')}
-                            >
-                              <ThemedText style={styles.label}>Punto de lucha:</ThemedText>
-                            </TouchableOpacity>
-                          </View>
-                          <ThemedText style={styles.messageText}>{item.puntoLucha}</ThemedText>
-                        </>
-                      )}
+                      {defaultFields.map((field) => {
+                        const value = item[field.key as keyof Message];
+                        // Only show if field has content AND is marked as visible
+                        if (typeof value === 'string' && value.trim() && visibleFields[field.id] === true) {
+                          return (
+                            <React.Fragment key={field.key}>
+                              <View style={styles.labelContainer}>
+                                <TouchableOpacity 
+                                  onPress={(e) => {
+                                    e.stopPropagation();
+                                    handleInfoPress(field.id);
+                                  }}
+                                >
+                                  <ThemedText style={styles.label}>{field.label}</ThemedText>
+                                </TouchableOpacity>
+                              </View>
+                              <ThemedText style={styles.messageText}>{value}</ThemedText>
+                            </React.Fragment>
+                          );
+                        }
+                        return null;
+                      })}
                       {selectedNoteId === item.id && (
                         <TouchableOpacity 
                           style={styles.deleteButton}
@@ -487,197 +366,44 @@ export default function HomeScreen() {
                     style={styles.datePicker}
                   />
 
-                  <View style={styles.labelContainer}>
-                    <TouchableOpacity 
-                      onPress={() => handleInfoPress('planVida')}
-                    >
-                      <ThemedText style={styles.label}>Plan de vida y trato con el Señor:</ThemedText>
-                    </TouchableOpacity>
-                  </View>
-                  <TextInput
-                    ref={planInputRef}
-                    style={[
-                      styles.editInput,
-                      { color: Colors[colorScheme ?? 'light'].text }
-                    ]}
-                    value={editPlanVida}
-                    onChangeText={setEditPlanVida}
-                    multiline={true}
-                    autoFocus={true}
-                    placeholder={descriptions.planVida}
-                    placeholderTextColor={Colors[colorScheme ?? 'light'].tabIconDefault}
-                  />
-
-                  <View style={styles.labelContainer}>
-                    <TouchableOpacity 
-                      onPress={() => handleInfoPress('mortificacion')}
-                    >
-                      <ThemedText style={styles.label}>Mortificación y espíritu de sacrificio. Carácter:</ThemedText>
-                    </TouchableOpacity>
-                  </View>
-                  <TextInput
-                    style={[
-                      styles.editInput,
-                      { color: Colors[colorScheme ?? 'light'].text }
-                    ]}
-                    value={editMortificacion}
-                    onChangeText={setEditMortificacion}
-                    multiline={true}
-                    placeholder={descriptions.mortificacion}
-                    placeholderTextColor={Colors[colorScheme ?? 'light'].tabIconDefault}
-                  />
-
-                  <View style={styles.labelContainer}>
-                    <TouchableOpacity 
-                      onPress={() => handleInfoPress('presenciaDios')}
-                    >
-                      <ThemedText style={styles.label}>Presencia de Dios y aprovechamiento del tiempo:</ThemedText>
-                    </TouchableOpacity>
-                  </View>
-                  <TextInput
-                    style={[
-                      styles.editInput,
-                      { color: Colors[colorScheme ?? 'light'].text }
-                    ]}
-                    value={editPresenciaDios}
-                    onChangeText={setEditPresenciaDios}
-                    multiline={true}
-                    placeholder={descriptions.presenciaDios}
-                    placeholderTextColor={Colors[colorScheme ?? 'light'].tabIconDefault}
-                  />
-
-                  <View style={styles.labelContainer}>
-                    <TouchableOpacity 
-                      onPress={() => handleInfoPress('fePurezaVocacion')}
-                    >
-                      <ThemedText style={styles.label}>Fe / Pureza / Vocación:</ThemedText>
-                    </TouchableOpacity>
-                  </View>
-                  <TextInput
-                    style={[
-                      styles.editInput,
-                      { color: Colors[colorScheme ?? 'light'].text }
-                    ]}
-                    value={editFePurezaVocacion}
-                    onChangeText={setEditFePurezaVocacion}
-                    multiline={true}
-                    placeholder={descriptions.fePurezaVocacion}
-                    placeholderTextColor={Colors[colorScheme ?? 'light'].tabIconDefault}
-                  />
-
-                  <View style={styles.labelContainer}>
-                    <TouchableOpacity 
-                      onPress={() => handleInfoPress('trabajoEstudio')}
-                    >
-                      <ThemedText style={styles.label}>Trabajo / Estudio:</ThemedText>
-                    </TouchableOpacity>
-                  </View>
-                  <TextInput
-                    style={[
-                      styles.editInput,
-                      { color: Colors[colorScheme ?? 'light'].text }
-                    ]}
-                    value={editTrabajoEstudio}
-                    onChangeText={setEditTrabajoEstudio}
-                    multiline={true}
-                    placeholder={descriptions.trabajoEstudio}
-                    placeholderTextColor={Colors[colorScheme ?? 'light'].tabIconDefault}
-                  />
-
-                  <View style={styles.labelContainer}>
-                    <TouchableOpacity 
-                      onPress={() => handleInfoPress('fraternidad')}
-                    >
-                      <ThemedText style={styles.label}>Fraternidad, amigos y apostolado:</ThemedText>
-                    </TouchableOpacity>
-                  </View>
-                  <TextInput
-                    style={[
-                      styles.editInput,
-                      { color: Colors[colorScheme ?? 'light'].text }
-                    ]}
-                    value={editFraternidad}
-                    onChangeText={setEditFraternidad}
-                    multiline={true}
-                    placeholder={descriptions.fraternidad}
-                    placeholderTextColor={Colors[colorScheme ?? 'light'].tabIconDefault}
-                  />
-
-                  <View style={styles.labelContainer}>
-                    <TouchableOpacity 
-                      onPress={() => handleInfoPress('familia')}
-                    >
-                      <ThemedText style={styles.label}>Familia:</ThemedText>
-                    </TouchableOpacity>
-                  </View>
-                  <TextInput
-                    style={[
-                      styles.editInput,
-                      { color: Colors[colorScheme ?? 'light'].text }
-                    ]}
-                    value={editFamilia}
-                    onChangeText={setEditFamilia}
-                    multiline={true}
-                    placeholder={descriptions.familia}
-                    placeholderTextColor={Colors[colorScheme ?? 'light'].tabIconDefault}
-                  />
-
-                  <View style={styles.labelContainer}>
-                    <TouchableOpacity 
-                      onPress={() => handleInfoPress('pobrezaGenerosidad')}
-                    >
-                      <ThemedText style={styles.label}>Pobreza y generosidad:</ThemedText>
-                    </TouchableOpacity>
-                  </View>
-                  <TextInput
-                    style={[
-                      styles.editInput,
-                      { color: Colors[colorScheme ?? 'light'].text }
-                    ]}
-                    value={editPobrezaGenerosidad}
-                    onChangeText={setEditPobrezaGenerosidad}
-                    multiline={true}
-                    placeholder={descriptions.pobrezaGenerosidad}
-                    placeholderTextColor={Colors[colorScheme ?? 'light'].tabIconDefault}
-                  />
-
-                  <View style={styles.labelContainer}>
-                    <TouchableOpacity 
-                      onPress={() => handleInfoPress('preocupaciones')}
-                    >
-                      <ThemedText style={styles.label}>Preocupaciones, tristezas, alegrías y preguntas:</ThemedText>
-                    </TouchableOpacity>
-                  </View>
-                  <TextInput
-                    style={[
-                      styles.editInput,
-                      { color: Colors[colorScheme ?? 'light'].text }
-                    ]}
-                    value={editPreocupaciones}
-                    onChangeText={setEditPreocupaciones}
-                    multiline={true}
-                    placeholder={descriptions.preocupaciones}
-                    placeholderTextColor={Colors[colorScheme ?? 'light'].tabIconDefault}
-                  />
-
-                  <View style={styles.labelContainer}>
-                    <TouchableOpacity 
-                      onPress={() => handleInfoPress('puntoLucha')}
-                    >
-                      <ThemedText style={styles.label}>Punto de lucha:</ThemedText>
-                    </TouchableOpacity>
-                  </View>
-                  <TextInput
-                    style={[
-                      styles.editInput,
-                      { color: Colors[colorScheme ?? 'light'].text }
-                    ]}
-                    value={editPuntoLucha}
-                    onChangeText={setEditPuntoLucha}
-                    multiline={true}
-                    placeholder={descriptions.puntoLucha}
-                    placeholderTextColor={Colors[colorScheme ?? 'light'].tabIconDefault}
-                  />
+                  {defaultFields.map((field) => {
+                    // Only show if field is marked as visible
+                    if (visibleFields[field.id] !== true) return null;
+                    
+                    // Find the lowest visible field ID for auto-focus
+                    const lowestVisibleId = Math.min(...defaultFields
+                      .filter(f => visibleFields[f.id] === true)
+                      .map(f => f.id)
+                    );
+                    
+                    return (
+                      <React.Fragment key={field.key}>
+                        <View style={styles.labelContainer}>
+                          <TouchableOpacity 
+                            onPress={(e) => {
+                              e.stopPropagation();
+                              handleInfoPress(field.id);
+                            }}
+                          >
+                            <ThemedText style={styles.label}>{field.label}</ThemedText>
+                          </TouchableOpacity>
+                        </View>
+                        <TextInput
+                          ref={field.id === lowestVisibleId ? planInputRef : undefined}
+                          style={[
+                            styles.editInput,
+                            { color: Colors[colorScheme ?? 'light'].text }
+                          ]}
+                          value={editState[field.key]}
+                          onChangeText={(text) => updateEditField(field.key, text)}
+                          multiline={true}
+                          autoFocus={field.id === lowestVisibleId}
+                          placeholder={field.placeholder}
+                          placeholderTextColor={Colors[colorScheme ?? 'light'].tabIconDefault}
+                        />
+                      </React.Fragment>
+                    );
+                  })}
                 </ScrollView>
               </ThemedView>
             </KeyboardAvoidingView>
@@ -779,7 +505,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   editInput: {
-    minHeight: 80,
+    minHeight: 40,
     borderWidth: 1,
     borderColor: 'rgba(0, 255, 255, 0.2)',
     borderRadius: 8,
