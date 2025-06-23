@@ -2,7 +2,7 @@ import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { Colors } from '@/constants/Colors';
-import { defaultFields, personalQuestions } from '@/constants/Fields';
+import { defaultFields, Field, getAllFields, personalQuestions } from '@/constants/Fields';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -36,11 +36,33 @@ export default function HomeScreen() {
     });
     return initialState;
   });
-  const [showDatePicker, setShowDatePicker] = useState(false);
   const [visibleFields, setVisibleFields] = useState<Record<number, boolean>>({});
+  const [allFields, setAllFields] = useState<Field[]>([]);
   const colorScheme = useColorScheme();
   const planInputRef = useRef<TextInput>(null);
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
+
+  // Load all fields (default + custom)
+  useEffect(() => {
+    loadAllFields();
+  }, []);
+
+  const loadAllFields = async () => {
+    try {
+      const fields = await getAllFields();
+      setAllFields(fields);
+
+      // Update edit state to include all fields
+      const newEditState = {} as EditState;
+      fields.forEach(field => {
+        newEditState[field.key] = editState[field.key] || '';
+      });
+      setEditState(newEditState);
+    } catch (error) {
+      console.error('Error loading fields:', error);
+      setAllFields(defaultFields);
+    }
+  };
 
   const handleNewNote = () => {
     const newDate = new Date();
@@ -51,7 +73,7 @@ export default function HomeScreen() {
     } as Message;
     
     // Initialize all fields with empty strings
-    defaultFields.forEach(field => {
+    allFields.forEach(field => {
       newMessage[field.key] = '';
     });
     
@@ -60,7 +82,7 @@ export default function HomeScreen() {
     
     // Reset edit state
     const resetState = {} as EditState;
-    defaultFields.forEach(field => {
+    allFields.forEach(field => {
       resetState[field.key] = '';
     });
     setEditState(resetState);
@@ -72,7 +94,7 @@ export default function HomeScreen() {
     
     // Set edit state from message
     const newEditState = {} as EditState;
-    defaultFields.forEach(field => {
+    allFields.forEach(field => {
       newEditState[field.key] = message[field.key] || '';
     });
     setEditState(newEditState);
@@ -87,7 +109,7 @@ export default function HomeScreen() {
       } as Message;
       
       // Update all fields from edit state
-      defaultFields.forEach(field => {
+      allFields.forEach(field => {
         updatedMessage[field.key] = editState[field.key].trim();
       });
       
@@ -109,7 +131,6 @@ export default function HomeScreen() {
   };
 
   const onDateChange = (event: any, selectedDate?: Date) => {
-    setShowDatePicker(false);
     if (selectedDate) {
       setEditDate(selectedDate);
     }
@@ -156,16 +177,17 @@ export default function HomeScreen() {
 
   useFocusEffect(
     React.useCallback(() => {
-      const timer = setTimeout(() => {
-        planInputRef.current?.focus();
-      }, 100);
-      return () => clearTimeout(timer);
+      loadAllFields();
+      loadVisibleFields();
     }, [])
   );
 
   useFocusEffect(
     React.useCallback(() => {
-      loadVisibleFields();
+      const timer = setTimeout(() => {
+        planInputRef.current?.focus();
+      }, 100);
+      return () => clearTimeout(timer);
     }, [])
   );
 
@@ -176,7 +198,7 @@ export default function HomeScreen() {
         setVisibleFields(JSON.parse(saved));
       } else {
         // Default: all fields visible
-        const defaultVisible = defaultFields.reduce((acc, field) => {
+        const defaultVisible = allFields.reduce((acc, field) => {
           acc[field.id] = true;
           return acc;
         }, {} as Record<number, boolean>);
@@ -271,7 +293,7 @@ export default function HomeScreen() {
                       <ThemedText style={styles.dateText}>
                         {item.date.toLocaleDateString()}
                       </ThemedText>
-                      {defaultFields.map((field) => {
+                      {allFields.map((field) => {
                         const value = item[field.key as keyof Message];
                         // Only show if field has content AND is marked as visible
                         if (typeof value === 'string' && value.trim() && visibleFields[field.id] === true) {
@@ -366,12 +388,12 @@ export default function HomeScreen() {
                     style={styles.datePicker}
                   />
 
-                  {defaultFields.map((field) => {
+                  {allFields.map((field) => {
                     // Only show if field is marked as visible
                     if (visibleFields[field.id] !== true) return null;
                     
                     // Find the lowest visible field ID for auto-focus
-                    const lowestVisibleId = Math.min(...defaultFields
+                    const lowestVisibleId = Math.min(...allFields
                       .filter(f => visibleFields[f.id] === true)
                       .map(f => f.id)
                     );
@@ -501,9 +523,6 @@ const styles = StyleSheet.create({
   saveButtonText: {
     color: 'white',
   },
-  datePicker: {
-    marginBottom: 16,
-  },
   editInput: {
     minHeight: 40,
     borderWidth: 1,
@@ -555,5 +574,8 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     paddingTop: 18,
     fontWeight: 'bold',
+  },
+  datePicker: {
+    marginBottom: 16,
   },
 }); 
