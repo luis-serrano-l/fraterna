@@ -3,6 +3,7 @@ import { ThemedView } from '@/components/ThemedView';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { Colors } from '@/constants/Colors';
 import { defaultFields, Field, getAllFields, personalQuestions } from '@/constants/Fields';
+import { Typography } from '@/constants/Typography';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -276,7 +277,13 @@ export default function HomeScreen() {
                     <Pressable
                       style={[
                         styles.noteContent,
-                        selectedNoteId === item.id && styles.noteContentSelected
+                        {
+                          backgroundColor: Colors[colorScheme ?? 'light'].containerBackgroundActive
+                        },
+                        selectedNoteId === item.id && {
+                          ...styles.noteContentSelected,
+                          borderColor: Colors[colorScheme ?? 'light'].border
+                        }
                       ]}
                       onPress={() => {
                         setSelectedNoteId(null);
@@ -333,7 +340,7 @@ export default function HomeScreen() {
                 ItemSeparatorComponent={() => (
                   <View style={[
                     styles.separator,
-                    { backgroundColor: Colors[colorScheme ?? 'light'].tabIconDefault }
+                    { backgroundColor: Colors[colorScheme ?? 'light'].separatorSubtle }
                   ]} />
                 )}
                 style={styles.messageList}
@@ -407,14 +414,17 @@ export default function HomeScreen() {
                               handleInfoPress(field.id);
                             }}
                           >
-                            <ThemedText style={styles.label}>{field.label}</ThemedText>
+                            <ThemedText style={styles.modalLabel}>{field.label}</ThemedText>
                           </TouchableOpacity>
                         </View>
                         <TextInput
                           ref={field.id === lowestVisibleId ? planInputRef : undefined}
                           style={[
                             styles.editInput,
-                            { color: Colors[colorScheme ?? 'light'].text }
+                            { 
+                              color: Colors[colorScheme ?? 'light'].text,
+                              borderColor: Colors[colorScheme ?? 'light'].border
+                            }
                           ]}
                           value={editState[field.key]}
                           onChangeText={(text) => updateEditField(field.key, text)}
@@ -467,16 +477,14 @@ const styles = StyleSheet.create({
   noteContent: {
     padding: 12,
     borderRadius: 12,
-    backgroundColor: 'rgba(0, 255, 255, 0.05)',
     position: 'relative',
   },
   noteContentSelected: {
     borderWidth: 1,
-    borderColor: 'aqua',
   },
   dateText: {
-    fontSize: 16,
-    fontWeight: 'bold',
+    ...Typography.caption,
+    opacity: 0.8,
     marginBottom: 8,
   },
   labelContainer: {
@@ -486,13 +494,17 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   label: {
-    fontSize: 14,
-    fontWeight: 'bold',
+    ...Typography.label,
     marginRight: 8,
-    textDecorationLine: 'underline',
+  },
+  modalLabel: {
+    ...Typography.label,
+    marginRight: 8,
+    color: '#007AFF',
+    opacity: 0.9,
   },
   messageText: {
-    fontSize: 16,
+    ...Typography.body,
   },
   modalContent: {
     flex: 1,
@@ -509,8 +521,7 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   closeButtonText: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    ...Typography.header,
   },
   headerSaveButton: {
     paddingVertical: 6,
@@ -521,16 +532,16 @@ const styles = StyleSheet.create({
     backgroundColor: '#007AFF',
   },
   saveButtonText: {
+    ...Typography.button,
     color: 'white',
   },
   editInput: {
     minHeight: 40,
     borderWidth: 1,
-    borderColor: 'rgba(0, 255, 255, 0.2)',
     borderRadius: 8,
     padding: 12,
     marginBottom: 16,
-    fontSize: 16,
+    ...Typography.input,
   },
   plusSign: {
     width: 20,
@@ -554,7 +565,6 @@ const styles = StyleSheet.create({
   separator: {
     height: 1,
     marginVertical: 8,
-    backgroundColor: 'rgba(0, 255, 255, 0.2)',
   },
   deleteButton: {
     position: 'absolute',
@@ -569,7 +579,7 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   previousPuntoLuchaText: {
-    fontSize: 16,
+    ...Typography.body,
     marginBottom: 12,
     fontStyle: 'italic',
     paddingTop: 18,

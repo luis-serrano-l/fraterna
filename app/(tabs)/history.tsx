@@ -3,6 +3,7 @@ import { ThemedView } from '@/components/ThemedView';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { Colors } from '@/constants/Colors';
 import { Field, getAllFields } from '@/constants/Fields';
+import { Typography } from '@/constants/Typography';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
@@ -107,7 +108,11 @@ export default function HistoryScreen() {
         <TouchableOpacity
           style={[
             styles.fieldHeader,
-            hasEntries && styles.fieldHeaderWithEntries,
+            {
+              backgroundColor: hasEntries 
+                ? Colors[colorScheme ?? 'light'].containerBackgroundActive
+                : Colors[colorScheme ?? 'light'].containerBackgroundEmpty
+            },
             !hasEntries && styles.fieldHeaderEmpty
           ]}
           onPress={() => toggleFieldExpansion(item.field.id)}
@@ -133,7 +138,10 @@ export default function HistoryScreen() {
         </TouchableOpacity>
 
         {isExpanded && hasEntries && (
-          <View style={styles.entriesContainer}>
+          <View style={[
+            styles.entriesContainer,
+            { backgroundColor: Colors[colorScheme ?? 'light'].containerBackgroundSubtle }
+          ]}>
             <FlatList
               data={item.entries}
               keyExtractor={(entry) => entry.id}
@@ -152,7 +160,7 @@ export default function HistoryScreen() {
               ItemSeparatorComponent={() => (
                 <View style={[
                   styles.entrySeparator,
-                  { backgroundColor: Colors[colorScheme ?? 'light'].tabIconDefault }
+                  { backgroundColor: Colors[colorScheme ?? 'light'].separatorSubtle }
                 ]} />
               )}
               scrollEnabled={false}
@@ -178,7 +186,7 @@ export default function HistoryScreen() {
         ItemSeparatorComponent={() => (
           <View style={[
             styles.fieldSeparator,
-            { backgroundColor: Colors[colorScheme ?? 'light'].tabIconDefault }
+            { backgroundColor: Colors[colorScheme ?? 'light'].separatorSubtle }
           ]} />
         )}
         contentContainerStyle={styles.listContent}
@@ -198,7 +206,7 @@ const styles = StyleSheet.create({
     paddingBottom: 6,
   },
   subtitle: {
-    fontSize: 16,
+    ...Typography.body,
     opacity: 0.7,
   },
   listContent: {
@@ -210,13 +218,12 @@ const styles = StyleSheet.create({
   fieldHeader: {
     padding: 16,
     borderRadius: 12,
-    backgroundColor: 'rgba(0, 255, 255, 0.05)',
   },
   fieldHeaderWithEntries: {
-    backgroundColor: 'rgba(0, 255, 255, 0.1)',
+    // Will be set dynamically with color
   },
   fieldHeaderEmpty: {
-    backgroundColor: 'rgba(128, 128, 128, 0.1)',
+    // Will be set dynamically with color
   },
   fieldHeaderContent: {
     flexDirection: 'row',
@@ -224,8 +231,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   fieldLabel: {
-    fontSize: 16,
-    fontWeight: '600',
+    ...Typography.label,
     flex: 1,
   },
   fieldHeaderRight: {
@@ -234,13 +240,12 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   entryCount: {
-    fontSize: 14,
+    ...Typography.caption,
     opacity: 0.7,
   },
   entriesContainer: {
     marginTop: 8,
     padding: 12,
-    backgroundColor: 'rgba(0, 255, 255, 0.02)',
     borderRadius: 8,
   },
   entryItem: {
@@ -250,13 +255,11 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   entryDate: {
-    fontSize: 14,
-    fontWeight: '500',
+    ...Typography.caption,
     opacity: 0.8,
   },
   entryContent: {
-    fontSize: 15,
-    lineHeight: 22,
+    ...Typography.body,
   },
   fieldSeparator: {
     height: 1,

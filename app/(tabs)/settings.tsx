@@ -2,6 +2,7 @@ import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { Colors } from '@/constants/Colors';
 import { addCustomField, defaultFields, editCustomField, editFieldLabel, Field, getAllFields } from '@/constants/Fields';
+import { Typography } from '@/constants/Typography';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useEffect, useState } from 'react';
@@ -352,19 +353,16 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    ...Typography.sectionTitle,
     marginBottom: 12,
   },
   sectionDescription: {
-    fontSize: 14,
+    ...Typography.body,
     opacity: 0.7,
     marginBottom: 16,
-    lineHeight: 20,
   },
   subsectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    ...Typography.subsectionTitle,
     marginTop: 16,
     marginBottom: 8,
     opacity: 0.8,
@@ -404,30 +402,26 @@ const styles = StyleSheet.create({
   },
   checkmark: {
     color: 'white',
-    fontSize: 14,
-    fontWeight: 'bold',
+    ...Typography.small,
     textAlign: 'center',
-    lineHeight: 16,
   },
   fieldLabel: {
-    fontSize: 16,
+    ...Typography.label,
   },
   editButton: {
     padding: 8,
     marginRight: 8,
   },
   editButtonText: {
-    fontSize: 20,
+    ...Typography.header,
     color: '#007AFF',
-    fontWeight: 'bold',
   },
   resetButton: {
     padding: 8,
   },
   resetButtonText: {
-    fontSize: 20,
+    ...Typography.header,
     color: '#007AFF',
-    fontWeight: 'bold',
   },
   addFieldButton: {
     padding: 16,
@@ -439,8 +433,7 @@ const styles = StyleSheet.create({
   },
   addFieldButtonText: {
     color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
+    ...Typography.button,
   },
   modalOverlay: {
     flex: 1,
@@ -463,22 +456,19 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    ...Typography.modalTitle,
   },
   modalCloseButton: {
     padding: 4,
   },
   modalCloseButtonText: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    ...Typography.header,
   },
   modalContent: {
     padding: 16,
   },
   inputLabel: {
-    fontSize: 16,
-    fontWeight: '600',
+    ...Typography.label,
     marginBottom: 8,
     marginTop: 12,
   },
@@ -486,7 +476,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 8,
     padding: 12,
-    fontSize: 16,
+    ...Typography.input,
     marginBottom: 8,
   },
   modalButtons: {
@@ -502,7 +492,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cancelButtonText: {
-    fontSize: 16,
+    ...Typography.button,
   },
   addButton: {
     flex: 1,
@@ -511,9 +501,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   addButtonText: {
-    fontSize: 16,
+    ...Typography.button,
     color: 'white',
-    fontWeight: '600',
   },
   addIconContainer: {
     width: 20,
@@ -536,9 +525,8 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   removeButtonText: {
-    fontSize: 20,
+    ...Typography.header,
     color: '#FF3B30',
-    fontWeight: 'bold',
   },
   disabledButton: {
     backgroundColor: '#0077FF',
