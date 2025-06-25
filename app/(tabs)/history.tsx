@@ -31,6 +31,7 @@ type FieldHistory = {
 export default function HistoryScreen() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [allFields, setAllFields] = useState<Field[]>([]);
+  const [visibleFields, setVisibleFields] = useState<Record<number, boolean>>({});
   const [fieldHistories, setFieldHistories] = useState<FieldHistory[]>([]);
   const [expandedFields, setExpandedFields] = useState<Set<number>>(new Set());
   const colorScheme = useColorScheme();
@@ -47,6 +48,19 @@ export default function HistoryScreen() {
       // Load fields
       const fields = await getAllFields();
       setAllFields(fields);
+
+      // Load visible fields
+      const savedVisibleFields = await AsyncStorage.getItem('visibleFields');
+      if (savedVisibleFields) {
+        setVisibleFields(JSON.parse(savedVisibleFields));
+      } else {
+        // Default: all fields visible
+        const defaultVisible = fields.reduce((acc, field) => {
+          acc[field.id] = true;
+          return acc;
+        }, {} as Record<number, boolean>);
+        setVisibleFields(defaultVisible);
+      }
 
       // Load messages
       const saved = await AsyncStorage.getItem('notes');
@@ -66,6 +80,7 @@ export default function HistoryScreen() {
   // Process messages into field histories
   useEffect(() => {
     const histories: FieldHistory[] = allFields
+      .filter(field => visibleFields[field.id] === true) // Only include visible fields
       .map(field => {
         const entries = messages
           .filter(msg => {
@@ -84,10 +99,11 @@ export default function HistoryScreen() {
           entries,
         };
       })
-      .filter(history => history.entries.length > 0); // Only show fields with entries
+      .filter(history => history.entries.length > 0) // Only show fields with entries
+      .sort((a, b) => b.entries.length - a.entries.length); // Sort by number of entries (most first)
 
     setFieldHistories(histories);
-  }, [messages, allFields]);
+  }, [messages, allFields, visibleFields]);
 
   const toggleFieldExpansion = (fieldId: number) => {
     const newExpanded = new Set(expandedFields);
@@ -228,16 +244,18 @@ const styles = StyleSheet.create({
   fieldHeaderContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
   },
   fieldLabel: {
     ...Typography.label,
     flex: 1,
+    marginRight: 8,
   },
   fieldHeaderRight: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    flexShrink: 0,
   },
   entryCount: {
     ...Typography.caption,

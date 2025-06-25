@@ -1,14 +1,13 @@
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { IconSymbol } from '@/components/ui/IconSymbol';
-import { Colors } from '@/constants/Colors';
 import { defaultFields, Field, getAllFields, personalQuestions } from '@/constants/Fields';
 import { Typography } from '@/constants/Typography';
-import { useColorScheme } from '@/hooks/useColorScheme';
+import { useTheme } from '@/hooks/useTheme';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useFocusEffect } from '@react-navigation/native';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, FlatList, Keyboard, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 
 // Dynamic Message type based on field configuration
@@ -39,9 +38,35 @@ export default function HomeScreen() {
   });
   const [visibleFields, setVisibleFields] = useState<Record<number, boolean>>({});
   const [allFields, setAllFields] = useState<Field[]>([]);
-  const colorScheme = useColorScheme();
+  const theme = useTheme();
   const planInputRef = useRef<TextInput>(null);
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
+
+  // Create dynamic styles based on theme
+  const dynamicStyles = useMemo(() => ({
+    fab: {
+      backgroundColor: theme.colors.tint,
+      ...theme.shadows.md,
+    },
+    noteContent: {
+      backgroundColor: theme.colors.containerBackgroundActive,
+    },
+    noteContentSelected: {
+      borderColor: theme.colors.border,
+    },
+    separator: {
+      backgroundColor: theme.colors.separatorSubtle,
+    },
+    saveButton: {
+      backgroundColor: theme.colors.buttonPrimary,
+    },
+    plusVertical: {
+      backgroundColor: theme.colors.background,
+    },
+    plusHorizontal: {
+      backgroundColor: theme.colors.background,
+    },
+  }), [theme]);
 
   // Load all fields (default + custom)
   useEffect(() => {
@@ -255,20 +280,17 @@ export default function HomeScreen() {
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <ThemedView style={styles.container}>
           <TouchableOpacity 
-            style={[
-              styles.fab,
-              { backgroundColor: Colors[colorScheme ?? 'light'].tint }
-            ]} 
+            style={[styles.fab, dynamicStyles.fab]} 
             onPress={handleNewNote}
           >
             <View style={styles.plusSign}>
-              <View style={[styles.plusVertical, { backgroundColor: Colors[colorScheme ?? 'light'].background }]} />
-              <View style={[styles.plusHorizontal, { backgroundColor: Colors[colorScheme ?? 'light'].background }]} />
+              <View style={[styles.plusVertical, dynamicStyles.plusVertical]} />
+              <View style={[styles.plusHorizontal, dynamicStyles.plusHorizontal]} />
             </View>
           </TouchableOpacity>
 
           <TouchableWithoutFeedback onPress={() => setSelectedNoteId(null)}>
-            <View style={{ flex: 1 }}>
+            <View style={styles.listContainer}>
               <FlatList
                 data={[...messages].sort((a, b) => b.date.getTime() - a.date.getTime())}
                 keyExtractor={(item) => item.id}
@@ -277,12 +299,10 @@ export default function HomeScreen() {
                     <Pressable
                       style={[
                         styles.noteContent,
-                        {
-                          backgroundColor: Colors[colorScheme ?? 'light'].containerBackgroundActive
-                        },
+                        dynamicStyles.noteContent,
                         selectedNoteId === item.id && {
                           ...styles.noteContentSelected,
-                          borderColor: Colors[colorScheme ?? 'light'].border
+                          ...dynamicStyles.noteContentSelected,
                         }
                       ]}
                       onPress={() => {
@@ -297,7 +317,7 @@ export default function HomeScreen() {
                         }
                       }}
                     >
-                      <ThemedText style={styles.dateText}>
+                      <ThemedText style={[styles.dateText, theme.typography.caption]}>
                         {item.date.toLocaleDateString()}
                       </ThemedText>
                       {allFields.map((field) => {
@@ -313,10 +333,10 @@ export default function HomeScreen() {
                                     handleInfoPress(field.id);
                                   }}
                                 >
-                                  <ThemedText style={styles.label}>{field.label}</ThemedText>
+                                  <ThemedText style={Typography.label}>{field.label}</ThemedText>
                                 </TouchableOpacity>
                               </View>
-                              <ThemedText style={styles.messageText}>{value}</ThemedText>
+                              <ThemedText style={[styles.messageText, theme.typography.body]}>{value}</ThemedText>
                             </React.Fragment>
                           );
                         }
@@ -330,7 +350,7 @@ export default function HomeScreen() {
                           <IconSymbol
                             name="trash.fill"
                             size={20}
-                            color={Colors[colorScheme ?? 'light'].text}
+                            color={theme.colors.text}
                           />
                         </TouchableOpacity>
                       )}
@@ -338,10 +358,7 @@ export default function HomeScreen() {
                   </View>
                 )}
                 ItemSeparatorComponent={() => (
-                  <View style={[
-                    styles.separator,
-                    { backgroundColor: Colors[colorScheme ?? 'light'].separatorSubtle }
-                  ]} />
+                  <View style={[styles.separator, dynamicStyles.separator]} />
                 )}
                 style={styles.messageList}
               />
@@ -356,14 +373,11 @@ export default function HomeScreen() {
           >
             <KeyboardAvoidingView 
               behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-              style={{ flex: 1 }}
+              style={styles.modalContainer}
             >
               <ThemedView style={styles.modalContent}>
                 {getPreviousPuntoLucha() && (
-                  <ThemedText style={[
-                    styles.previousPuntoLuchaText,
-                    { color: Colors[colorScheme ?? 'light'].text }
-                  ]}>
+                  <ThemedText style={[styles.previousPuntoLuchaText, theme.typography.body]}>
                     Anterior punto de lucha: {getPreviousPuntoLucha()}
                   </ThemedText>
                 )}
@@ -372,13 +386,13 @@ export default function HomeScreen() {
                     style={styles.closeButton}
                     onPress={handleCancelEdit}
                   >
-                    <ThemedText style={styles.closeButtonText}>✕</ThemedText>
+                    <ThemedText style={[styles.closeButtonText, theme.typography.header]}>✕</ThemedText>
                   </TouchableOpacity>
                   <TouchableOpacity 
-                    style={[styles.saveButton, styles.headerSaveButton]} 
+                    style={[styles.saveButton, dynamicStyles.saveButton]} 
                     onPress={handleSaveEdit}
                   >
-                    <ThemedText style={styles.saveButtonText}>Save</ThemedText>
+                    <ThemedText style={[styles.saveButtonText, theme.typography.button]}>Save</ThemedText>
                   </TouchableOpacity>
                 </View>
 
@@ -414,24 +428,22 @@ export default function HomeScreen() {
                               handleInfoPress(field.id);
                             }}
                           >
-                            <ThemedText style={styles.modalLabel}>{field.label}</ThemedText>
+                            <ThemedText style={Typography.label}>{field.label}</ThemedText>
                           </TouchableOpacity>
                         </View>
                         <TextInput
                           ref={field.id === lowestVisibleId ? planInputRef : undefined}
                           style={[
                             styles.editInput,
-                            { 
-                              color: Colors[colorScheme ?? 'light'].text,
-                              borderColor: Colors[colorScheme ?? 'light'].border
-                            }
+                            theme.typography.input,
+                            { borderColor: theme.colors.border }
                           ]}
                           value={editState[field.key]}
                           onChangeText={(text) => updateEditField(field.key, text)}
                           multiline={true}
                           autoFocus={field.id === lowestVisibleId}
                           placeholder={field.placeholder}
-                          placeholderTextColor={Colors[colorScheme ?? 'light'].tabIconDefault}
+                          placeholderTextColor={theme.colors.tabIconDefault}
                         />
                       </React.Fragment>
                     );
@@ -460,12 +472,10 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
     zIndex: 1,
+  },
+  listContainer: {
+    flex: 1,
   },
   messageList: {
     flex: 1,
@@ -478,12 +488,16 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 12,
     position: 'relative',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
   },
   noteContentSelected: {
     borderWidth: 1,
   },
   dateText: {
-    ...Typography.caption,
     opacity: 0.8,
     marginBottom: 8,
   },
@@ -494,17 +508,17 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   label: {
-    ...Typography.label,
     marginRight: 8,
   },
   modalLabel: {
-    ...Typography.label,
     marginRight: 8,
-    color: '#007AFF',
     opacity: 0.9,
   },
   messageText: {
-    ...Typography.body,
+    // Typography handled by theme
+  },
+  modalContainer: {
+    flex: 1,
   },
   modalContent: {
     flex: 1,
@@ -521,19 +535,15 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   closeButtonText: {
-    ...Typography.header,
-  },
-  headerSaveButton: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
+    // Typography handled by theme
   },
   saveButton: {
     borderRadius: 6,
-    backgroundColor: '#007AFF',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
   },
   saveButtonText: {
-    ...Typography.button,
-    color: 'white',
+    // Typography handled by theme
   },
   editInput: {
     minHeight: 40,
@@ -541,7 +551,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     marginBottom: 16,
-    ...Typography.input,
   },
   plusSign: {
     width: 20,
@@ -579,7 +588,6 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   previousPuntoLuchaText: {
-    ...Typography.body,
     marginBottom: 12,
     fontStyle: 'italic',
     paddingTop: 18,

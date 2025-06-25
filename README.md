@@ -128,6 +128,121 @@ fraterna/
 - **AsyncStorage** - Local data persistence
 - **TypeScript** - Type safety and better development experience
 
+## Theme System
+
+The app uses an optimized theme system that loads all theme properties (colors, typography, spacing, shadows, layout) at compile time for better performance and maintainability.
+
+### Features
+
+- **Performance Optimized**: Theme properties are loaded once and cached using `useMemo`
+- **Type Safe**: Full TypeScript support with proper type inference
+- **Theme Support**: Automatic light/dark mode switching
+- **Centralized Management**: All theme properties managed through a custom hook
+- **Comprehensive**: Includes colors, typography, spacing, shadows, and layout
+
+### Usage
+
+```tsx
+import { useTheme } from '@/hooks/useTheme';
+
+export default function MyComponent() {
+  const theme = useTheme();
+  
+  return (
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <Text style={[styles.header, theme.typography.header]}>
+        Hello World
+      </Text>
+      <Text style={theme.typography.label}>
+        This label has consistent styling across the app
+      </Text>
+      <TouchableOpacity style={[styles.button, { backgroundColor: theme.colors.buttonPrimary }]}>
+        <Text style={[styles.buttonText, theme.typography.button]}>
+          Click Me
+        </Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    padding: 16,
+  },
+  header: {
+    marginBottom: 16,
+  },
+  button: {
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  buttonText: {
+    // No custom styling needed
+  },
+});
+```
+
+**Best Practices:**
+- Use predefined classes in `StyleSheet.create()` for layout, spacing, and structure
+- Typography includes default colors - no need to specify colors unless overriding
+- Only apply theme colors for backgrounds, borders, and other non-text elements
+- Avoid inline styling objects - use theme classes instead
+- Keep custom styling minimal and only when necessary
+
+**Typography with Built-in Colors:**
+- `theme.typography.label` - Includes default color for labels
+- `theme.typography.body` - Includes default color for body text
+- `theme.typography.header` - Includes default color for headers
+- `theme.typography.button` - Includes default color for button text
+
+For a comprehensive example showing this approach, see `components/ThemeExample.tsx`.
+
+### Available Theme Properties
+
+#### Colors
+
+- **Text**: `theme.colors.text`, `theme.colors.textPrimary`, `theme.colors.textSecondary`, `theme.colors.textTertiary`
+- **Background**: `theme.colors.background`, `theme.colors.containerBackground`, `theme.colors.containerBackgroundActive`
+- **Borders**: `theme.colors.border`, `theme.colors.borderSubtle`
+- **Interactive**: `theme.colors.tint`, `theme.colors.buttonPrimary`, `theme.colors.buttonText`
+- **Separators**: `theme.colors.separator`, `theme.colors.separatorSubtle`
+
+#### Typography
+
+- `theme.typography.header`, `theme.typography.body`, `theme.typography.caption`
+- `theme.typography.label`, `theme.typography.button`, `theme.typography.input`
+- `theme.typography.sectionTitle`, `theme.typography.modalTitle`
+
+#### Spacing
+
+- `theme.spacing.xs`, `theme.spacing.sm`, `theme.spacing.md`, `theme.spacing.lg`, `theme.spacing.xl`
+
+#### Border Radius
+
+- `theme.borderRadius.sm`, `theme.borderRadius.md`, `theme.borderRadius.lg`, `theme.borderRadius.xl`
+
+#### Shadows
+
+- `theme.shadows.sm`, `theme.shadows.md`, `theme.shadows.lg`
+
+#### Layout
+
+- `theme.layout.containerPadding`, `theme.layout.modalPadding`, `theme.layout.buttonHeight`
+
+### Migration from Old System
+
+```tsx
+// Before (inefficient)
+const colorScheme = useColorScheme();
+<View style={{ backgroundColor: Colors[colorScheme ?? 'light'].background }}>
+
+// After (optimized)
+const theme = useTheme();
+<View style={{ backgroundColor: theme.colors.background }}>
+```
+
 ## Contributing
 
 1. Fork the repository
