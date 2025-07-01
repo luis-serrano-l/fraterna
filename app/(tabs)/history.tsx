@@ -83,7 +83,8 @@ export default function HistoryScreen() {
           entries,
         };
       })
-      .filter(history => history.entries.length > 0); // Only show fields with entries
+      .filter(history => history.entries.length > 0) // Only show fields with entries
+      .sort((a, b) => b.entries.length - a.entries.length); // Sort by number of entries (descending)
 
     setFieldHistories(histories);
   }, [messages, allFields]);

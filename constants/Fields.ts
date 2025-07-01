@@ -101,7 +101,42 @@ export const getAllFields = async (): Promise<Field[]> => {
       label: editedLabels[field.id] || field.label
     }));
     
-    return [...updatedDefaultFields, ...customFields];
+    // Get all fields (default + custom)
+    const allFields = [...updatedDefaultFields, ...customFields];
+    
+    // Load saved field order
+    const fieldOrderJson = await AsyncStorage.getItem('fieldOrder');
+    if (fieldOrderJson) {
+      const fieldOrder: number[] = JSON.parse(fieldOrderJson);
+      
+      // Create a map for quick lookup
+      const fieldMap = new Map(allFields.map(field => [field.id, field]));
+      
+      // Reorder fields based on saved order
+      const orderedFields: Field[] = [];
+      const usedIds = new Set<number>();
+      
+      // Add fields in the saved order
+      fieldOrder.forEach(id => {
+        const field = fieldMap.get(id);
+        if (field) {
+          orderedFields.push(field);
+          usedIds.add(id);
+        }
+      });
+      
+      // Add any remaining fields that weren't in the order (new fields)
+      allFields.forEach(field => {
+        if (!usedIds.has(field.id)) {
+          orderedFields.push(field);
+        }
+      });
+      
+      return orderedFields;
+    }
+    
+    // If no saved order, return fields in default order
+    return allFields;
   } catch (error) {
     console.error('Error loading custom fields:', error);
     return defaultFields;
