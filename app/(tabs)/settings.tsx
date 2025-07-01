@@ -5,8 +5,11 @@ import { addCustomField, defaultFields, editFieldLabel, Field, getAllFields, res
 import { Typography } from '@/constants/Typography';
 import { useTheme } from '@/hooks/useTheme';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useFocusEffect } from '@react-navigation/native';
 import React, { useEffect, useState } from 'react';
-import { Alert, Modal, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Modal, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import DraggableFlatList, { RenderItemParams } from 'react-native-draggable-flatlist';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 export default function SettingsScreen() {
   const [allFields, setAllFields] = useState<Field[]>([]);
@@ -23,6 +26,13 @@ export default function SettingsScreen() {
     loadFields();
     loadVisibleFields();
   }, []);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      loadFields();
+      loadVisibleFields();
+    }, [])
+  );
 
   const loadFields = async () => {
     try {
@@ -64,6 +74,16 @@ export default function SettingsScreen() {
       await AsyncStorage.setItem('visibleFields', JSON.stringify(newVisibleFields));
     } catch (error) {
       console.error('Error saving visible fields:', error);
+    }
+  };
+
+  const handleDragEnd = async ({ data }: { data: Field[] }) => {
+    setAllFields(data);
+    // Save the new order to AsyncStorage
+    try {
+      await AsyncStorage.setItem('fieldOrder', JSON.stringify(data.map(field => field.id)));
+    } catch (error) {
+      console.error('Error saving field order:', error);
     }
   };
 
@@ -202,13 +222,74 @@ export default function SettingsScreen() {
     setModalVisible(true);
   };
 
-  return (
-    <ThemedView style={styles.container}>
-      <ScrollView 
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollViewContent}
-        showsVerticalScrollIndicator={false}
+  const renderFieldItem = ({ item, drag, isActive }: RenderItemParams<Field>) => (
+    <View style={[
+      styles.fieldContainer,
+      isActive && styles.fieldContainerActive
+    ]}>
+      {/* Drag Handle */}
+      <TouchableOpacity
+        style={styles.dragHandle}
+        onPressIn={drag}
       >
+        <View style={styles.dragHandleIcon}>
+          <View style={[styles.dragLine, { backgroundColor: theme.colors.text }]} />
+          <View style={[styles.dragLine, { backgroundColor: theme.colors.text }]} />
+          <View style={[styles.dragLine, { backgroundColor: theme.colors.text }]} />
+        </View>
+      </TouchableOpacity>
+
+      {/* Checkbox */}
+      <TouchableOpacity
+        style={styles.checkboxContainer}
+        onPress={() => toggleField(item.id)}
+      >
+        <View style={[
+          styles.checkbox,
+          visibleFields[item.id] && styles.checkboxChecked,
+          { borderColor: theme.colors.text }
+        ]}>
+          {visibleFields[item.id] && (
+            <ThemedText style={styles.checkmark}>✓</ThemedText>
+          )}
+        </View>
+      </TouchableOpacity>
+
+      {/* Field Text */}
+      <TouchableOpacity 
+        style={[
+          styles.fieldTextContainer,
+          { backgroundColor: theme.colors.background }
+        ]}
+        onPress={() => handleEditField(item)}
+        onLongPress={() => {
+          if (selectedFieldId === item.id) {
+            setSelectedFieldId(null);
+          } else {
+            setSelectedFieldId(item.id);
+          }
+        }}
+      >
+        <ThemedText style={styles.fieldLabel}>{item.label}</ThemedText>
+        {selectedFieldId === item.id && (
+          <TouchableOpacity 
+            style={styles.deleteButton}
+            onPress={() => handleDeleteField(item)}
+          >
+            <IconSymbol
+              name="trash.fill"
+              size={20}
+              color={theme.colors.text}
+            />
+          </TouchableOpacity>
+        )}
+      </TouchableOpacity>
+    </View>
+  );
+
+  return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <ThemedView style={styles.container}>
         <View style={styles.section}>
           <ThemedText style={styles.sectionTitle}>
             Field Visibility
@@ -217,175 +298,124 @@ export default function SettingsScreen() {
             Choose which fields to show in your daily notes. Hidden fields will preserve their data.
           </ThemedText>
 
-          {/* All Fields */}
-          <ThemedText style={styles.subsectionTitle}>
-            All Fields
-          </ThemedText>
-          {allFields.map(field => (
-            <View 
-              key={field.id} 
-              style={[
-                styles.fieldContainer,
-                selectedFieldId === field.id && {
-                  ...styles.fieldContainerSelected,
-                  borderColor: theme.colors.border
-                }
-              ]}
-            >
-              <TouchableOpacity
-                style={styles.checkboxContainer}
-                onPress={() => toggleField(field.id)}
-              >
-                <View
-                  style={[
-                    styles.checkbox,
-                    visibleFields[field.id] && styles.checkboxChecked,
-                    { borderColor: theme.colors.text }
-                  ]}>
-                  {visibleFields[field.id] && (
-                    <ThemedText style={styles.checkmark}>✓</ThemedText>
-                  )}
-                </View>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.fieldTextContainer,
-                  { backgroundColor: theme.colors.background }
-                ]}
-                onPress={() => handleEditField(field)}
-                onLongPress={() => {
-                  if (selectedFieldId === field.id) {
-                    setSelectedFieldId(null);
-                  } else {
-                    setSelectedFieldId(field.id);
-                  }
-                }}
-              >
-                <ThemedText style={styles.fieldLabel}>{field.label}</ThemedText>
-                {selectedFieldId === field.id && (
-                  <TouchableOpacity 
-                    style={styles.deleteButton}
-                    onPress={() => handleDeleteField(field)}
-                  >
-                    <IconSymbol
-                      name="trash.fill"
-                      size={20}
-                      color={theme.colors.text}
-                    />
-                  </TouchableOpacity>
-                )}
-              </TouchableOpacity>
-            </View>
-          ))}
-
-          {/* Add Field Button */}
-          <TouchableOpacity
-            style={[
-              styles.addFieldButton,
-              { backgroundColor: theme.colors.buttonPrimary }
-            ]}
-            onPress={openAddFieldModal}
-          >
-            <View style={styles.addIconContainer}>
-              <View style={styles.addIcon}>
-                <View style={[styles.addIconLine, { backgroundColor: 'white' }]} />
-                <View style={[styles.addIconLine, { backgroundColor: 'white' }]} />
-              </View>
-            </View>
-            <ThemedText style={styles.addFieldButtonText}>Add Custom Field</ThemedText>
-          </TouchableOpacity>
+          {/* Draggable Fields List */}
+          <DraggableFlatList
+            data={allFields}
+            renderItem={renderFieldItem}
+            keyExtractor={(item) => item.id.toString()}
+            onDragEnd={handleDragEnd}
+            contentContainerStyle={styles.draggableListContent}
+            showsVerticalScrollIndicator={false}
+          />
         </View>
-      </ScrollView>
 
-      {/* Reusable Field Modal */}
-      <Modal
-        visible={modalVisible}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={resetFieldForm}
-      >
-        <View style={styles.modalOverlay}>
+        {/* Floating Add Button */}
+        <TouchableOpacity
+          style={[
+            styles.fab,
+            { backgroundColor: theme.colors.buttonPrimary }
+          ]}
+          onPress={openAddFieldModal}
+        >
+          <View style={styles.plusSign}>
+            <View style={[styles.plusVertical, { backgroundColor: 'white' }]} />
+            <View style={[styles.plusHorizontal, { backgroundColor: 'white' }]} />
+          </View>
+        </TouchableOpacity>
+
+        {/* Reusable Field Modal */}
+        <Modal
+          visible={modalVisible}
+          animationType="slide"
+          transparent={true}
+          onRequestClose={resetFieldForm}
+        >
           <View style={[
-            styles.modalContainer,
-            { backgroundColor: theme.colors.background }
+            styles.modalOverlay,
+            { justifyContent: 'flex-start', paddingTop: 220 }
           ]}>
             <View style={[
-              styles.modalHeader,
-              { borderBottomColor: theme.colors.tabIconDefault }
+              styles.modalContainer,
+              { backgroundColor: theme.colors.background }
             ]}>
-              <ThemedText style={styles.modalTitle}>
-                {modalMode === 'add' ? 'Add Custom Field' : 'Edit Field'}
-              </ThemedText>
-              <TouchableOpacity
-                style={styles.modalCloseButton}
-                onPress={resetFieldForm}
-              >
-                <ThemedText style={[
-                  styles.modalCloseButtonText,
-                  { color: theme.colors.text }
-                ]}>✕</ThemedText>
-              </TouchableOpacity>
-            </View>
-            
-            <View style={styles.modalContent}>
-              <ThemedText style={styles.inputLabel}>Field Label:</ThemedText>
-              <TextInput
-                style={[
-                  styles.textInput,
-                  { 
-                    color: theme.colors.text,
-                    borderColor: theme.colors.tabIconDefault,
-                    backgroundColor: theme.colors.background
-                  }
-                ]}
-                value={fieldLabel}
-                onChangeText={setFieldLabel}
-                placeholder="Enter field label"
-                placeholderTextColor={theme.colors.tabIconDefault}
-              />
-
-              <View style={styles.modalButtons}>
-                <TouchableOpacity 
+              <View style={[
+                styles.modalHeader,
+                { borderBottomColor: theme.colors.tabIconDefault }
+              ]}>
+                <ThemedText style={styles.modalTitle}>
+                  {modalMode === 'add' ? 'Add Custom Field' : 'Edit Field'}
+                </ThemedText>
+                <TouchableOpacity
+                  style={styles.modalCloseButton}
+                  onPress={resetFieldForm}
+                >
+                  <ThemedText style={[
+                    styles.modalCloseButtonText,
+                    { color: theme.colors.text }
+                  ]}>✕</ThemedText>
+                </TouchableOpacity>
+              </View>
+              
+              <View style={styles.modalContent}>
+                <ThemedText style={styles.inputLabel}>Field Label:</ThemedText>
+                <TextInput
                   style={[
-                    styles.cancelButton,
+                    styles.textInput,
                     { 
+                      color: theme.colors.text,
                       borderColor: theme.colors.tabIconDefault,
                       backgroundColor: theme.colors.background
                     }
                   ]}
-                  onPress={resetFieldForm}
-                >
-                  <ThemedText style={[
-                    styles.cancelButtonText,
-                    { color: theme.colors.text }
-                  ]}>Cancel</ThemedText>
-                </TouchableOpacity>
-                <TouchableOpacity 
-                  style={[
-                    styles.addButton,
-                    { backgroundColor: theme.colors.buttonPrimary },
-                    ((modalMode === 'edit' && fieldLabel.trim() === originalFieldLabel) || 
-                     (modalMode === 'add' && !fieldLabel.trim())) && styles.disabledButton
-                  ]}
-                  onPress={modalMode === 'add' ? handleAddField : handleSaveFieldEdit}
-                  disabled={(modalMode === 'edit' && fieldLabel.trim() === originalFieldLabel) || 
-                           (modalMode === 'add' && !fieldLabel.trim())}
-                >
-                  <ThemedText style={[
-                    styles.addButtonText,
-                    { color: theme.colors.buttonText },
-                    ((modalMode === 'edit' && fieldLabel.trim() === originalFieldLabel) || 
-                     (modalMode === 'add' && !fieldLabel.trim())) && { opacity: 0.7 }
-                  ]}>
-                    {modalMode === 'add' ? 'Add' : 'Save'}
-                  </ThemedText>
-                </TouchableOpacity>
+                  value={fieldLabel}
+                  onChangeText={setFieldLabel}
+                  placeholder="Enter field label"
+                  placeholderTextColor={theme.colors.tabIconDefault}
+                />
+
+                <View style={styles.modalButtons}>
+                  <TouchableOpacity 
+                    style={[
+                      styles.cancelButton,
+                      { 
+                        borderColor: theme.colors.tabIconDefault,
+                        backgroundColor: theme.colors.background
+                      }
+                    ]}
+                    onPress={resetFieldForm}
+                  >
+                    <ThemedText style={[
+                      styles.cancelButtonText,
+                      { color: theme.colors.text }
+                    ]}>Cancel</ThemedText>
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={[
+                      styles.addButton,
+                      { backgroundColor: theme.colors.buttonPrimary },
+                      ((modalMode === 'edit' && fieldLabel.trim() === originalFieldLabel) || 
+                       (modalMode === 'add' && !fieldLabel.trim())) && styles.disabledButton
+                    ]}
+                    onPress={modalMode === 'add' ? handleAddField : handleSaveFieldEdit}
+                    disabled={(modalMode === 'edit' && fieldLabel.trim() === originalFieldLabel) || 
+                             (modalMode === 'add' && !fieldLabel.trim())}
+                  >
+                    <ThemedText style={[
+                      styles.addButtonText,
+                      { color: theme.colors.buttonText },
+                      ((modalMode === 'edit' && fieldLabel.trim() === originalFieldLabel) || 
+                       (modalMode === 'add' && !fieldLabel.trim())) && { opacity: 0.7 }
+                    ]}>
+                      {modalMode === 'add' ? 'Add Field' : 'Save Changes'}
+                    </ThemedText>
+                  </TouchableOpacity>
+                </View>
               </View>
             </View>
           </View>
-        </View>
-      </Modal>
-    </ThemedView>
+        </Modal>
+      </ThemedView>
+    </GestureHandlerRootView>
   );
 }
 
@@ -394,15 +424,9 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingTop: 60,
   },
-  scrollView: {
-    flex: 1,
-  },
-  scrollViewContent: {
-    padding: 16,
-    paddingBottom: 32,
-  },
   section: {
-    marginBottom: 24,
+    flex: 1,
+    padding: 16,
   },
   sectionTitle: {
     ...Typography.sectionTitle,
@@ -413,28 +437,33 @@ const styles = StyleSheet.create({
     opacity: 0.7,
     marginBottom: 16,
   },
-  subsectionTitle: {
-    ...Typography.subsectionTitle,
-    marginTop: 16,
-    marginBottom: 8,
-    opacity: 0.8,
+  draggableListContent: {
+    paddingBottom: 100, // Space for floating button
   },
   fieldContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 8,
-    borderRadius: 12,
-    padding: 4,
+    paddingVertical: 4,
   },
-  fieldContainerSelected: {
-    borderWidth: 1,
+  fieldContainerActive: {
+    opacity: 0.8,
+    transform: [{ scale: 1.02 }],
   },
-  fieldOption: {
-    flexDirection: 'row',
+  dragHandle: {
+    padding: 8,
+    marginRight: 8,
+  },
+  dragHandleIcon: {
+    width: 16,
+    height: 12,
+    justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 8,
+  },
+  dragLine: {
+    width: 12,
+    height: 1.5,
+    borderRadius: 0.75,
   },
   checkboxContainer: {
     marginRight: 12,
@@ -586,5 +615,40 @@ const styles = StyleSheet.create({
     top: 8,
     right: 8,
     padding: 4,
+  },
+  fab: {
+    position: 'absolute',
+    right: 20,
+    bottom: 32,
+    width: 56,
+    height: 56,
+    borderRadius: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    zIndex: 1,
+  },
+  plusSign: {
+    width: 20,
+    height: 20,
+    position: 'relative',
+  },
+  plusVertical: {
+    position: 'absolute',
+    width: 2,
+    height: '100%',
+    left: '50%',
+    transform: [{ translateX: -1 }],
+  },
+  plusHorizontal: {
+    position: 'absolute',
+    width: '100%',
+    height: 2,
+    top: '50%',
+    transform: [{ translateY: -1 }],
   },
 });
