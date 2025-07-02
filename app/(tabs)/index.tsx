@@ -169,12 +169,16 @@ export default function HomeScreen() {
       [
         {
           text: "Cancel",
-          style: "cancel"
+          style: "cancel",
+          onPress: () => setSelectedNoteId(null)
         },
         {
           text: "Delete",
           style: "destructive",
-          onPress: () => setMessages(messages.filter(msg => msg.id !== id))
+          onPress: () => {
+            setMessages(messages.filter(msg => msg.id !== id));
+            setSelectedNoteId(null);
+          }
         }
       ]
     );
