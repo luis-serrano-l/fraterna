@@ -1,7 +1,7 @@
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { IconSymbol } from '@/components/ui/IconSymbol';
-import { addCustomField, defaultFields, editFieldLabel, Field, getAllFields, resetFieldLabel } from '@/constants/Fields';
+import { addCustomField, defaultFields, editFieldLabel, Field, getAllFields, removeCustomField, resetFieldLabel } from '@/constants/Fields';
 import { Typography } from '@/constants/Typography';
 import { useTheme } from '@/hooks/useTheme';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -9,7 +9,14 @@ import { useFocusEffect } from '@react-navigation/native';
 import React, { useEffect, useState } from 'react';
 import { Alert, Modal, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 import DraggableFlatList, { RenderItemParams } from 'react-native-draggable-flatlist';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { GestureHandlerRootView, PanGestureHandler } from 'react-native-gesture-handler';
+import Animated, {
+  runOnJS,
+  useAnimatedGestureHandler,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring
+} from 'react-native-reanimated';
 
 export default function SettingsScreen() {
   const [allFields, setAllFields] = useState<Field[]>([]);
@@ -19,7 +26,6 @@ export default function SettingsScreen() {
   const [editingField, setEditingField] = useState<Field | null>(null);
   const [fieldLabel, setFieldLabel] = useState('');
   const [originalFieldLabel, setOriginalFieldLabel] = useState('');
-  const [selectedFieldId, setSelectedFieldId] = useState<number | null>(null);
   const theme = useTheme();
 
   useEffect(() => {
@@ -103,7 +109,24 @@ export default function SettingsScreen() {
         hasSpecialText: false,
       });
 
-      // Reload fields and update visibility
+      // Update field order to include the new field at the end
+      try {
+        const currentOrderJson = await AsyncStorage.getItem('fieldOrder');
+        let currentOrder: number[] = currentOrderJson ? JSON.parse(currentOrderJson) : [];
+        
+        // If no current order exists, create one with all default fields first
+        if (currentOrder.length === 0) {
+          currentOrder = defaultFields.map(field => field.id);
+        }
+        
+        // Add the new field to the end of the order
+        currentOrder.push(newField.id);
+        await AsyncStorage.setItem('fieldOrder', JSON.stringify(currentOrder));
+      } catch (error) {
+        console.error('Error updating field order:', error);
+      }
+
+      // Load fields with the updated order and update visibility
       await loadFields();
       const newVisibleFields = {
         ...visibleFields,
@@ -120,32 +143,45 @@ export default function SettingsScreen() {
     }
   };
 
-  const handleDeleteField = async (field: Field) => {
+  const handleDeleteField = async (field: Field, onCancel?: () => void) => {
     Alert.alert(
       'Remove Field',
       `Are you sure you want to remove "${field.label}"? This action cannot be undone.`,
       [
-        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Cancel', 
+          style: 'cancel',
+          onPress: () => {
+            // Reset animation state when user cancels
+            if (onCancel) {
+              onCancel();
+            }
+          }
+        },
         {
           text: 'Remove',
           style: 'destructive',
           onPress: async () => {
             try {
               if (field.id > 10) {
-                // Remove custom field from storage
-                const saved = await AsyncStorage.getItem('customFields');
-                if (saved) {
-                  const customFields = JSON.parse(saved);
-                  const updatedFields = customFields.filter((f: Field) => f.id !== field.id);
-                  await AsyncStorage.setItem('customFields', JSON.stringify(updatedFields));
-                }
+                // Remove custom field using the proper function
+                await removeCustomField(field.id);
               } else {
                 // Reset default field label to original
                 await resetFieldLabel(field.id);
               }
               
-              // Update local state
-              setAllFields(prev => prev.filter(f => f.id !== field.id));
+              // Update field order to remove the deleted field
+              try {
+                const currentOrderJson = await AsyncStorage.getItem('fieldOrder');
+                if (currentOrderJson) {
+                  const currentOrder: number[] = JSON.parse(currentOrderJson);
+                  const updatedOrder = currentOrder.filter(id => id !== field.id);
+                  await AsyncStorage.setItem('fieldOrder', JSON.stringify(updatedOrder));
+                }
+              } catch (error) {
+                console.error('Error updating field order:', error);
+              }
               
               // Remove from visible fields
               const newVisibleFields = { ...visibleFields };
@@ -153,8 +189,8 @@ export default function SettingsScreen() {
               setVisibleFields(newVisibleFields);
               await AsyncStorage.setItem('visibleFields', JSON.stringify(newVisibleFields));
               
-              // Clear selection
-              setSelectedFieldId(null);
+              // Reload fields to ensure consistency
+              await loadFields();
             } catch (error) {
               console.error('Error removing field:', error);
               Alert.alert('Error', 'Failed to remove field');
@@ -222,70 +258,128 @@ export default function SettingsScreen() {
     setModalVisible(true);
   };
 
-  const renderFieldItem = ({ item, drag, isActive }: RenderItemParams<Field>) => (
-    <View style={[
-      styles.fieldContainer,
-      isActive && styles.fieldContainerActive
-    ]}>
-      {/* Drag Handle */}
-      <TouchableOpacity
-        style={styles.dragHandle}
-        onPressIn={drag}
-      >
-        <View style={styles.dragHandleIcon}>
-          <View style={[styles.dragLine, { backgroundColor: theme.colors.text }]} />
-          <View style={[styles.dragLine, { backgroundColor: theme.colors.text }]} />
-          <View style={[styles.dragLine, { backgroundColor: theme.colors.text }]} />
-        </View>
-      </TouchableOpacity>
+  const renderFieldItem = ({ item, drag, isActive }: RenderItemParams<Field>) => {
+    const translateX = useSharedValue(0);
+    const deleteOpacity = useSharedValue(0);
 
-      {/* Checkbox */}
-      <TouchableOpacity
-        style={styles.checkboxContainer}
-        onPress={() => toggleField(item.id)}
-      >
-        <View style={[
-          styles.checkbox,
-          visibleFields[item.id] && styles.checkboxChecked,
-          { borderColor: theme.colors.text }
-        ]}>
-          {visibleFields[item.id] && (
-            <ThemedText style={styles.checkmark}>✓</ThemedText>
-          )}
-        </View>
-      </TouchableOpacity>
+    const resetAnimation = () => {
+      translateX.value = withSpring(0);
+      deleteOpacity.value = withSpring(0);
+    };
 
-      {/* Field Text */}
-      <TouchableOpacity 
-        style={[
-          styles.fieldTextContainer,
-          { backgroundColor: theme.colors.background }
-        ]}
-        onPress={() => handleEditField(item)}
-        onLongPress={() => {
-          if (selectedFieldId === item.id) {
-            setSelectedFieldId(null);
+    const gestureHandler = useAnimatedGestureHandler({
+      onStart: (_, context: any) => {
+        context.startX = translateX.value;
+        context.startY = 0;
+      },
+      onActive: (event, context: any) => {
+        // Only handle horizontal gestures, ignore vertical scrolling
+        if (Math.abs(event.translationX) > Math.abs(event.translationY)) {
+          const newTranslateX = context.startX + event.translationX;
+          translateX.value = Math.min(0, Math.max(-80, newTranslateX));
+          
+          // Show delete button when swiped left
+          if (translateX.value < -40) {
+            deleteOpacity.value = withSpring(1);
           } else {
-            setSelectedFieldId(item.id);
+            deleteOpacity.value = withSpring(0);
           }
-        }}
-      >
-        <ThemedText style={styles.fieldLabel}>{item.label}</ThemedText>
-        {selectedFieldId === item.id && (
-          <TouchableOpacity 
-            style={styles.deleteButton}
-            onPress={() => handleDeleteField(item)}
-          >
-            <IconSymbol
-              name="trash.fill"
-              size={20}
-              color={theme.colors.text}
-            />
-          </TouchableOpacity>
-        )}
-      </TouchableOpacity>
-    </View>
-  );
+        }
+      },
+      onEnd: (event) => {
+        // Only trigger delete for horizontal swipes
+        if (Math.abs(event.translationX) > Math.abs(event.translationY) && event.translationX < -60) {
+          // Trigger delete if swiped far enough horizontally
+          runOnJS(handleDeleteField)(item, resetAnimation);
+        } else {
+          // Snap back if not swiped far enough or if it was a vertical gesture
+          translateX.value = withSpring(0);
+          deleteOpacity.value = withSpring(0);
+        }
+      },
+    });
+
+    const animatedStyle = useAnimatedStyle(() => {
+      return {
+        transform: [{ translateX: translateX.value }],
+      };
+    });
+
+    const deleteButtonStyle = useAnimatedStyle(() => {
+      return {
+        opacity: deleteOpacity.value,
+      };
+    });
+
+    return (
+      <View style={styles.fieldItemContainer}>
+        {/* Delete Button Background */}
+        <Animated.View style={[
+          styles.deleteBackground,
+          deleteButtonStyle,
+          { backgroundColor: '#FF3B30' }
+        ]}>
+          <IconSymbol
+            name="trash.fill"
+            size={24}
+            color="white"
+          />
+        </Animated.View>
+
+        {/* Main Field Content */}
+        <PanGestureHandler 
+          onGestureEvent={gestureHandler}
+          activeOffsetX={[-10, 10]} // Only activate for horizontal gestures
+          failOffsetY={[-10, 10]}   // Fail if vertical gesture exceeds threshold
+        >
+          <Animated.View style={[
+            styles.fieldContainer,
+            isActive && styles.fieldContainerActive,
+            animatedStyle
+          ]}>
+            {/* Drag Handle */}
+            <TouchableOpacity
+              style={styles.dragHandle}
+              onPressIn={drag}
+            >
+              <View style={styles.dragHandleIcon}>
+                <View style={[styles.dragLine, { backgroundColor: theme.colors.text }]} />
+                <View style={[styles.dragLine, { backgroundColor: theme.colors.text }]} />
+                <View style={[styles.dragLine, { backgroundColor: theme.colors.text }]} />
+              </View>
+            </TouchableOpacity>
+
+            {/* Checkbox */}
+            <TouchableOpacity
+              style={styles.checkboxContainer}
+              onPress={() => toggleField(item.id)}
+            >
+              <View style={[
+                styles.checkbox,
+                visibleFields[item.id] && styles.checkboxChecked,
+                { borderColor: theme.colors.text }
+              ]}>
+                {visibleFields[item.id] && (
+                  <ThemedText style={styles.checkmark}>✓</ThemedText>
+                )}
+              </View>
+            </TouchableOpacity>
+
+            {/* Field Text */}
+            <TouchableOpacity 
+              style={[
+                styles.fieldTextContainer,
+                { backgroundColor: theme.colors.background }
+              ]}
+              onPress={() => handleEditField(item)}
+            >
+              <ThemedText style={styles.fieldLabel}>{item.label}</ThemedText>
+            </TouchableOpacity>
+          </Animated.View>
+        </PanGestureHandler>
+      </View>
+    );
+  };
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -440,11 +534,15 @@ const styles = StyleSheet.create({
   draggableListContent: {
     paddingBottom: 100, // Space for floating button
   },
+  fieldItemContainer: {
+    position: 'relative',
+    marginBottom: 8,
+  },
   fieldContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
     paddingVertical: 4,
+    backgroundColor: 'transparent',
   },
   fieldContainerActive: {
     opacity: 0.8,
@@ -609,6 +707,15 @@ const styles = StyleSheet.create({
   },
   disabledButton: {
     backgroundColor: '#0077FF',
+  },
+  deleteBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   deleteButton: {
     position: 'absolute',
