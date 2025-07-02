@@ -320,28 +320,28 @@ export default function HomeScreen() {
                       <ThemedText style={[styles.dateText, theme.typography.caption]}>
                         {item.date.toLocaleDateString()}
                       </ThemedText>
-                      {allFields.map((field) => {
-                        const value = item[field.key as keyof Message];
-                        // Only show if field has content AND is marked as visible
-                        if (typeof value === 'string' && value.trim() && visibleFields[field.id] === true) {
-                          return (
-                            <React.Fragment key={field.key}>
-                              <View style={styles.labelContainer}>
-                                <TouchableOpacity 
-                                  onPress={(e) => {
-                                    e.stopPropagation();
-                                    handleInfoPress(field.id);
-                                  }}
-                                >
-                                  <ThemedText style={Typography.label}>{field.label}</ThemedText>
-                                </TouchableOpacity>
-                              </View>
-                              <ThemedText style={[styles.messageText, theme.typography.body]}>{value}</ThemedText>
-                            </React.Fragment>
-                          );
-                        }
-                        return null;
-                      })}
+                      {allFields
+                        .map(field => {
+                          const value = item[field.key as keyof Message];
+                          const hasContent = typeof value === 'string' && value.trim() && visibleFields[field.id] === true;
+                          return { field, value, hasContent };
+                        })
+                        .filter(item => item.hasContent)
+                        .map(({ field, value }) => (
+                          <React.Fragment key={field.key}>
+                            <View style={styles.labelContainer}>
+                              <TouchableOpacity 
+                                onPress={(e) => {
+                                  e.stopPropagation();
+                                  handleInfoPress(field.id);
+                                }}
+                              >
+                                <ThemedText style={Typography.label}>{field.label}</ThemedText>
+                              </TouchableOpacity>
+                            </View>
+                            <ThemedText style={[styles.messageText, theme.typography.body]}>{value}</ThemedText>
+                          </React.Fragment>
+                        ))}
                       {selectedNoteId === item.id && (
                         <TouchableOpacity 
                           style={styles.deleteButton}
