@@ -88,6 +88,9 @@ export const EDITED_FIELD_LABELS_STORAGE_KEY = 'editedFieldLabels';
 // Function to get all fields (default + custom)
 export const getAllFields = async (): Promise<Field[]> => {
   try {
+    // Clean up field order first to remove any orphaned IDs
+    await cleanupFieldOrder();
+    
     const customFieldsJson = await AsyncStorage.getItem(CUSTOM_FIELDS_STORAGE_KEY);
     const customFields: Field[] = customFieldsJson ? JSON.parse(customFieldsJson) : [];
     
@@ -101,16 +104,25 @@ export const getAllFields = async (): Promise<Field[]> => {
       label: editedLabels[field.id] || field.label
     }));
     
-    // Get all fields (default + custom)
-    const allFields = [...updatedDefaultFields, ...customFields];
+    // Get all fields (default + custom) - ensure no duplicates by ID
+    const fieldMap = new Map<number, Field>();
+    
+    // Add default fields first
+    updatedDefaultFields.forEach(field => {
+      fieldMap.set(field.id, field);
+    });
+    
+    // Add custom fields (they will override default fields if same ID, but shouldn't happen)
+    customFields.forEach(field => {
+      fieldMap.set(field.id, field);
+    });
+    
+    const allFields = Array.from(fieldMap.values());
     
     // Load saved field order
     const fieldOrderJson = await AsyncStorage.getItem('fieldOrder');
     if (fieldOrderJson) {
       const fieldOrder: number[] = JSON.parse(fieldOrderJson);
-      
-      // Create a map for quick lookup
-      const fieldMap = new Map(allFields.map(field => [field.id, field]));
       
       // Reorder fields based on saved order
       const orderedFields: Field[] = [];
@@ -177,12 +189,19 @@ export const addCustomField = async (field: Omit<Field, 'id'>): Promise<Field> =
     const customFieldsJson = await AsyncStorage.getItem(CUSTOM_FIELDS_STORAGE_KEY);
     const customFields: Field[] = customFieldsJson ? JSON.parse(customFieldsJson) : [];
     
-    // Generate new ID (highest existing ID + 1)
+    // Get all existing fields to find the next available ID
     const allFields = [...defaultFields, ...customFields];
-    const maxId = Math.max(...allFields.map(f => f.id));
+    const existingIds = new Set(allFields.map(f => f.id));
+    
+    // Find the first available ID starting from 11 (since 1-10 are reserved for default fields)
+    let nextId = 11;
+    while (existingIds.has(nextId)) {
+      nextId++;
+    }
+    
     const newField: Field = {
       ...field,
-      id: maxId + 1,
+      id: nextId,
     };
     
     const updatedCustomFields = [...customFields, newField];
@@ -223,6 +242,32 @@ export const removeCustomField = async (fieldId: number): Promise<void> => {
   } catch (error) {
     console.error('Error removing custom field:', error);
     throw error;
+  }
+};
+
+// Helper function to clean up field order by removing non-existent field IDs
+export const cleanupFieldOrder = async (): Promise<void> => {
+  try {
+    const fieldOrderJson = await AsyncStorage.getItem('fieldOrder');
+    if (!fieldOrderJson) return;
+    
+    const fieldOrder: number[] = JSON.parse(fieldOrderJson);
+    
+    // Get all existing fields
+    const customFieldsJson = await AsyncStorage.getItem(CUSTOM_FIELDS_STORAGE_KEY);
+    const customFields: Field[] = customFieldsJson ? JSON.parse(customFieldsJson) : [];
+    const allFields = [...defaultFields, ...customFields];
+    const existingIds = new Set(allFields.map(f => f.id));
+    
+    // Remove non-existent IDs from the order
+    const cleanedOrder = fieldOrder.filter(id => existingIds.has(id));
+    
+    // Only update if there were changes
+    if (cleanedOrder.length !== fieldOrder.length) {
+      await AsyncStorage.setItem('fieldOrder', JSON.stringify(cleanedOrder));
+    }
+  } catch (error) {
+    console.error('Error cleaning up field order:', error);
   }
 };
 
