@@ -49,6 +49,8 @@ export default function NotesScreen() {
   
   const theme = useTheme();
   const contentInputRef = useRef<TextInput>(null);
+  const [isEditingFolderName, setIsEditingFolderName] = useState(false);
+  const folderNameInputRef = useRef<TextInput>(null);
 
   // --- Add refs for swipeable items ---
   const folderSwipeableRefs = useRef<{ [key: string]: any }>({});
@@ -295,6 +297,11 @@ export default function NotesScreen() {
     return currentFolder?.name || 'Notes';
   };
 
+  const getCurrentFolder = () => {
+    if (navigationState.currentFolderId === null) return null;
+    return folders.find(f => f.id === navigationState.currentFolderId) || null;
+  };
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <KeyboardAvoidingView 
@@ -325,9 +332,39 @@ export default function NotesScreen() {
               </View>
               {navigationState.currentFolderId !== null && (
                 <View style={styles.headerTitleRow}>
-                  <ThemedText style={[styles.headerTitle, theme.typography.header]}>
-                    {getCurrentFolderName()}
-                  </ThemedText>
+                  {isEditingFolderName ? (
+                    <TextInput
+                      ref={folderNameInputRef}
+                      style={[styles.headerTitle, theme.typography.header]}
+                      value={folderName}
+                      onChangeText={setFolderName}
+                      onBlur={() => {
+                        setIsEditingFolderName(false);
+                        handleSaveFolder();
+                      }}
+                      onSubmitEditing={() => {
+                        setIsEditingFolderName(false);
+                        handleSaveFolder();
+                      }}
+                      autoFocus
+                    />
+                  ) : (
+                    <TouchableOpacity
+                      onPress={() => {
+                        const currentFolder = getCurrentFolder();
+                        if (currentFolder) {
+                          setEditingFolder(currentFolder);
+                          setFolderName(currentFolder.name);
+                          setIsEditingFolderName(true);
+                          setTimeout(() => folderNameInputRef.current?.focus(), 100);
+                        }
+                      }}
+                    >
+                      <ThemedText style={[styles.headerTitle, theme.typography.header]}>
+                        {getCurrentFolderName()}
+                      </ThemedText>
+                    </TouchableOpacity>
+                  )}
                 </View>
               )}
             </View>
@@ -347,7 +384,6 @@ export default function NotesScreen() {
               <FlatList
                 data={[...currentFolders, ...currentNotes]}
                 keyExtractor={(item) => item.id}
-                contentContainerStyle={styles.listContent}
                 renderItem={({ item, index }) => {
                   const isFolder = 'name' in item;
                   let showSeparator = false;
@@ -776,14 +812,11 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 16,
   },
-  listContent: {
-    // No alignment - let items use their natural width
-  },
   itemContainer: {
-    marginBottom: 0, // remove extra space between items, separators will handle folder spacing
+    marginBottom: 0,
   },
   folderContainer: {
-    marginBottom: 8,
+    marginBottom: 4,
     alignItems: 'flex-start',
   },
   noteContainer: {
@@ -791,7 +824,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   folderItem: {
-    padding: 12,
+    padding: 8,
     borderRadius: 12,
     elevation: 2,
     shadowColor: '#000',
