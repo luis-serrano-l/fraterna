@@ -9,6 +9,8 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { useFocusEffect } from '@react-navigation/native';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, FlatList, Keyboard, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
+import { GestureHandlerRootView, PanGestureHandler } from 'react-native-gesture-handler';
+import Animated, { runOnJS, useAnimatedGestureHandler, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 
 // Dynamic Message type based on field configuration
 type Message = {
@@ -40,12 +42,13 @@ export default function HomeScreen() {
   const [allFields, setAllFields] = useState<Field[]>([]);
   const theme = useTheme();
   const planInputRef = useRef<TextInput>(null);
-  const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
 
   // Create dynamic styles based on theme
   const dynamicStyles = useMemo(() => ({
     fab: {
-      backgroundColor: theme.colors.tint,
+      backgroundColor: theme.colors.buttonPrimary,
+      borderColor: theme.colors.buttonPrimary,
+      borderWidth: 1,
       ...theme.shadows.md,
     },
     noteContent: {
@@ -163,25 +166,7 @@ export default function HomeScreen() {
   };
 
   const handleDelete = (id: string) => {
-    Alert.alert(
-      "Delete Note",
-      "Are you sure you want to delete this note?",
-      [
-        {
-          text: "Cancel",
-          style: "cancel",
-          onPress: () => setSelectedNoteId(null)
-        },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: () => {
-            setMessages(messages.filter(msg => msg.id !== id));
-            setSelectedNoteId(null);
-          }
-        }
-      ]
-    );
+    setMessages(messages.filter(msg => msg.id !== id));
   };
 
   const handleInfoPress = (fieldId: number) => {
@@ -276,90 +261,205 @@ export default function HomeScreen() {
     AsyncStorage.setItem('notes', JSON.stringify(messages));
   }, [messages]);
 
-  return (
-    <KeyboardAvoidingView 
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={{ flex: 1 }}
-    >
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <ThemedView style={styles.container}>
-          <TouchableOpacity 
-            style={[styles.fab, dynamicStyles.fab]} 
-            onPress={handleNewNote}
-          >
-            <View style={styles.plusSign}>
-              <View style={[styles.plusVertical, dynamicStyles.plusVertical]} />
-              <View style={[styles.plusHorizontal, dynamicStyles.plusHorizontal]} />
-            </View>
-          </TouchableOpacity>
+  function SwipeableRow({
+    item,
+    onDelete,
+    onPress,
+    theme,
+    dynamicStyles,
+    allFields,
+    visibleFields
+  }: {
+    item: Message;
+    onDelete: (id: string) => void;
+    onPress: (item: Message) => void;
+    theme: any;
+    dynamicStyles: any;
+    allFields: Field[];
+    visibleFields: Record<number, boolean>;
+  }) {
+    const id = item.id;
+    const translateX = useSharedValue(0);
+    const deleteOpacity = useSharedValue(0);
+    const alertShownRef = React.useRef(false);
 
-          <TouchableWithoutFeedback onPress={() => setSelectedNoteId(null)}>
+    const resetAnimation = () => {
+      translateX.value = withSpring(0);
+      deleteOpacity.value = withSpring(0);
+    };
+
+    const showDeleteAlert = () => {
+      if (alertShownRef.current) return;
+      alertShownRef.current = true;
+      Alert.alert(
+        'Delete Note',
+        'Are you sure you want to delete this note?',
+        [
+          {
+            text: 'Cancel',
+            style: 'cancel',
+            onPress: () => {
+              resetAnimation();
+              alertShownRef.current = false;
+            },
+          },
+          {
+            text: 'Delete',
+            style: 'destructive',
+            onPress: () => {
+              onDelete(id);
+              alertShownRef.current = false;
+            },
+          },
+        ]
+      );
+    };
+
+    const gestureHandler = useAnimatedGestureHandler({
+      onStart: (_, context: any) => {
+        context.startX = translateX.value;
+        context.startY = 0;
+      },
+      onActive: (event, context: any) => {
+        if (Math.abs(event.translationX) > Math.abs(event.translationY)) {
+          const newTranslateX = context.startX + event.translationX;
+          translateX.value = Math.min(0, Math.max(-80, newTranslateX));
+          if (translateX.value < -40) {
+            deleteOpacity.value = withSpring(1);
+          } else {
+            deleteOpacity.value = withSpring(0);
+          }
+        }
+      },
+      onEnd: (event, context: any) => {
+        if (
+          Math.abs(event.translationX) > Math.abs(event.translationY) &&
+          event.translationX < -60
+        ) {
+          runOnJS(showDeleteAlert)();
+        } else {
+          translateX.value = withSpring(0);
+          deleteOpacity.value = withSpring(0);
+          runOnJS(() => {
+            alertShownRef.current = false;
+          })();
+        }
+      },
+    });
+
+    const animatedStyle = useAnimatedStyle(() => {
+      return {
+        transform: [{ translateX: translateX.value }],
+      };
+    });
+
+    const deleteButtonStyle = useAnimatedStyle(() => {
+      return {
+        opacity: deleteOpacity.value,
+      };
+    });
+
+    return (
+      <View style={styles.noteContainer}>
+        {/* Delete Button Background */}
+        <Animated.View
+          style={[
+            styles.deleteButtonBackground,
+            deleteButtonStyle,
+            {
+              backgroundColor: '#FF3B30',
+              position: 'absolute',
+              right: 0,
+              left: 0,
+              top: 0,
+              bottom: 0,
+              zIndex: 0,
+              justifyContent: 'flex-end',
+              alignItems: 'center',
+              flexDirection: 'row',
+            },
+          ]}
+        >
+          <TouchableOpacity
+            style={styles.deleteButton}
+            onPress={showDeleteAlert}
+          >
+            <IconSymbol name="trash.fill" size={24} color="white" />
+          </TouchableOpacity>
+        </Animated.View>
+        {/* Main Content */}
+        <PanGestureHandler
+          onGestureEvent={gestureHandler}
+          activeOffsetX={[-10, 10]}
+          failOffsetY={[-10, 10]}
+        >
+          <Animated.View
+            style={[
+              styles.noteContent,
+              dynamicStyles.noteContent,
+              animatedStyle,
+              { zIndex: 1 },
+            ]}
+          >
+            <Pressable
+              onPress={() => onPress(item)}
+            >
+              <ThemedText style={[styles.dateText, theme.typography.caption]}>
+                {item.date.toLocaleDateString()}
+              </ThemedText>
+              {allFields
+                .map(field => {
+                  const value = item[field.key as keyof Message];
+                  const hasContent = typeof value === 'string' && value.trim() && visibleFields[field.id] === true;
+                  return { field, value, hasContent };
+                })
+                .filter(item => item.hasContent)
+                .map(({ field, value }) => (
+                  <React.Fragment key={field.key}>
+                    <View style={styles.labelContainer}>
+                      <ThemedText style={Typography.label}>{field.label}</ThemedText>
+                    </View>
+                    <ThemedText style={[styles.messageText, theme.typography.body]}>{value}</ThemedText>
+                  </React.Fragment>
+                ))}
+            </Pressable>
+          </Animated.View>
+        </PanGestureHandler>
+      </View>
+    );
+  }
+
+  return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+      >
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <ThemedView style={styles.container}>
+            <TouchableOpacity 
+              style={[styles.fab, dynamicStyles.fab]} 
+              onPress={handleNewNote}
+            >
+              <View style={styles.plusSign}>
+                <View style={styles.plusVertical} />
+                <View style={styles.plusHorizontal} />
+              </View>
+            </TouchableOpacity>
             <View style={styles.listContainer}>
               <FlatList
                 data={[...messages].sort((a, b) => b.date.getTime() - a.date.getTime())}
                 keyExtractor={(item) => item.id}
                 renderItem={({ item }) => (
-                  <View style={styles.noteContainer}>
-                    <Pressable
-                      style={[
-                        styles.noteContent,
-                        dynamicStyles.noteContent,
-                        selectedNoteId === item.id && {
-                          ...styles.noteContentSelected,
-                          ...dynamicStyles.noteContentSelected,
-                        }
-                      ]}
-                      onPress={() => {
-                        setSelectedNoteId(null);
-                        handleEdit(item);
-                      }}
-                      onLongPress={() => {
-                        if (selectedNoteId === item.id) {
-                          setSelectedNoteId(null);
-                        } else {
-                          setSelectedNoteId(item.id);
-                        }
-                      }}
-                    >
-                      <ThemedText style={[styles.dateText, theme.typography.caption]}>
-                        {item.date.toLocaleDateString()}
-                      </ThemedText>
-                      {allFields
-                        .map(field => {
-                          const value = item[field.key as keyof Message];
-                          const hasContent = typeof value === 'string' && value.trim() && visibleFields[field.id] === true;
-                          return { field, value, hasContent };
-                        })
-                        .filter(item => item.hasContent)
-                        .map(({ field, value }) => (
-                          <React.Fragment key={field.key}>
-                            <View style={styles.labelContainer}>
-                              <TouchableOpacity 
-                                onPress={(e) => {
-                                  e.stopPropagation();
-                                  handleInfoPress(field.id);
-                                }}
-                              >
-                                <ThemedText style={Typography.label}>{field.label}</ThemedText>
-                              </TouchableOpacity>
-                            </View>
-                            <ThemedText style={[styles.messageText, theme.typography.body]}>{value}</ThemedText>
-                          </React.Fragment>
-                        ))}
-                      {selectedNoteId === item.id && (
-                        <TouchableOpacity 
-                          style={styles.deleteButton}
-                          onPress={() => handleDelete(item.id)}
-                        >
-                          <IconSymbol
-                            name="trash.fill"
-                            size={20}
-                            color={theme.colors.text}
-                          />
-                        </TouchableOpacity>
-                      )}
-                    </Pressable>
-                  </View>
+                  <SwipeableRow
+                    item={item}
+                    onDelete={handleDelete}
+                    onPress={handleEdit}
+                    theme={theme}
+                    dynamicStyles={dynamicStyles}
+                    allFields={allFields}
+                    visibleFields={visibleFields}
+                  />
                 )}
                 ItemSeparatorComponent={() => (
                   <View style={[styles.separator, dynamicStyles.separator]} />
@@ -367,98 +467,98 @@ export default function HomeScreen() {
                 style={styles.messageList}
               />
             </View>
-          </TouchableWithoutFeedback>
 
-          <Modal
-            animationType="slide"
-            transparent={true}
-            visible={editingMessage !== null}
-            onRequestClose={handleCancelEdit}
-          >
-            <KeyboardAvoidingView 
-              behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-              style={styles.modalContainer}
+            <Modal
+              animationType="slide"
+              transparent={true}
+              visible={editingMessage !== null}
+              onRequestClose={handleCancelEdit}
             >
-              <ThemedView style={styles.modalContent}>
-                {getPreviousPuntoLucha() && (
-                  <ThemedText style={[styles.previousPuntoLuchaText, theme.typography.body]}>
-                    Anterior punto de lucha: {getPreviousPuntoLucha()}
-                  </ThemedText>
-                )}
-                <View style={styles.modalHeader}>
-                  <TouchableOpacity 
-                    style={styles.closeButton}
-                    onPress={handleCancelEdit}
-                  >
-                    <ThemedText style={[styles.closeButtonText, theme.typography.header]}>✕</ThemedText>
-                  </TouchableOpacity>
-                  <TouchableOpacity 
-                    style={[styles.saveButton, dynamicStyles.saveButton]} 
-                    onPress={handleSaveEdit}
-                  >
-                    <ThemedText style={[styles.saveButtonText, theme.typography.button]}>Save</ThemedText>
-                  </TouchableOpacity>
-                </View>
+              <KeyboardAvoidingView 
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                style={styles.modalContainer}
+              >
+                <ThemedView style={styles.modalContent}>
+                  {getPreviousPuntoLucha() && (
+                    <ThemedText style={[styles.previousPuntoLuchaText, theme.typography.body]}>
+                      Anterior punto de lucha: {getPreviousPuntoLucha()}
+                    </ThemedText>
+                  )}
+                  <View style={styles.modalHeader}>
+                    <TouchableOpacity 
+                      style={styles.closeButton}
+                      onPress={handleCancelEdit}
+                    >
+                      <ThemedText style={[styles.closeButtonText, theme.typography.header]}>✕</ThemedText>
+                    </TouchableOpacity>
+                    <TouchableOpacity 
+                      style={[styles.saveButton, dynamicStyles.saveButton]} 
+                      onPress={handleSaveEdit}
+                    >
+                      <ThemedText style={[styles.saveButtonText, theme.typography.button]}>Save</ThemedText>
+                    </TouchableOpacity>
+                  </View>
 
-                <ScrollView 
-                  style={styles.formScrollView}
-                  contentContainerStyle={styles.formScrollViewContent}
-                  keyboardShouldPersistTaps="handled"
-                >
-                  <DateTimePicker
-                    value={editDate}
-                    mode="date"
-                    display="default"
-                    onChange={onDateChange}
-                    style={styles.datePicker}
-                  />
+                  <ScrollView 
+                    style={styles.formScrollView}
+                    contentContainerStyle={styles.formScrollViewContent}
+                    keyboardShouldPersistTaps="handled"
+                  >
+                    <DateTimePicker
+                      value={editDate}
+                      mode="date"
+                      display="default"
+                      onChange={onDateChange}
+                      style={styles.datePicker}
+                    />
 
-                  {allFields.map((field) => {
-                    // Only show if field is marked as visible
-                    if (visibleFields[field.id] !== true) return null;
-                    
-                    // Find the lowest visible field ID for auto-focus
-                    const lowestVisibleId = Math.min(...allFields
-                      .filter(f => visibleFields[f.id] === true)
-                      .map(f => f.id)
-                    );
-                    
-                    return (
-                      <React.Fragment key={field.key}>
-                        <View style={styles.labelContainer}>
-                          <TouchableOpacity 
-                            onPress={(e) => {
-                              e.stopPropagation();
-                              handleInfoPress(field.id);
-                            }}
-                          >
-                            <ThemedText style={Typography.label}>{field.label}</ThemedText>
-                          </TouchableOpacity>
-                        </View>
-                        <TextInput
-                          ref={field.id === lowestVisibleId ? planInputRef : undefined}
-                          style={[
-                            styles.editInput,
-                            theme.typography.input,
-                            { borderColor: theme.colors.border }
-                          ]}
-                          value={editState[field.key]}
-                          onChangeText={(text) => updateEditField(field.key, text)}
-                          multiline={true}
-                          autoFocus={field.id === lowestVisibleId}
-                          placeholder={field.placeholder}
-                          placeholderTextColor={theme.colors.tabIconDefault}
-                        />
-                      </React.Fragment>
-                    );
-                  })}
-                </ScrollView>
-              </ThemedView>
-            </KeyboardAvoidingView>
-          </Modal>
-        </ThemedView>
-      </TouchableWithoutFeedback>
-    </KeyboardAvoidingView>
+                    {allFields.map((field) => {
+                      // Only show if field is marked as visible
+                      if (visibleFields[field.id] !== true) return null;
+                      
+                      // Find the lowest visible field ID for auto-focus
+                      const lowestVisibleId = Math.min(...allFields
+                        .filter(f => visibleFields[f.id] === true)
+                        .map(f => f.id)
+                      );
+                      
+                      return (
+                        <React.Fragment key={field.key}>
+                          <View style={styles.labelContainer}>
+                            <TouchableOpacity 
+                              onPress={(e) => {
+                                e.stopPropagation();
+                                handleInfoPress(field.id);
+                              }}
+                            >
+                              <ThemedText style={Typography.label}>{field.label}</ThemedText>
+                            </TouchableOpacity>
+                          </View>
+                          <TextInput
+                            ref={field.id === lowestVisibleId ? planInputRef : undefined}
+                            style={[
+                              styles.editInput,
+                              theme.typography.input,
+                              { borderColor: theme.colors.border }
+                            ]}
+                            value={editState[field.key]}
+                            onChangeText={(text) => updateEditField(field.key, text)}
+                            multiline={true}
+                            autoFocus={field.id === lowestVisibleId}
+                            placeholder={field.placeholder}
+                            placeholderTextColor={theme.colors.tabIconDefault}
+                          />
+                        </React.Fragment>
+                      );
+                    })}
+                  </ScrollView>
+                </ThemedView>
+              </KeyboardAvoidingView>
+            </Modal>
+          </ThemedView>
+        </TouchableWithoutFeedback>
+      </KeyboardAvoidingView>
+    </GestureHandlerRootView>
   );
 }
 
@@ -473,10 +573,16 @@ const styles = StyleSheet.create({
     bottom: 32,
     width: 56,
     height: 56,
-    borderRadius: 8,
+    borderRadius: 16, // Not fully circular, but rounded
     justifyContent: 'center',
     alignItems: 'center',
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
     zIndex: 1,
+    // Remove hardcoded borderColor/backgroundColor, use dynamicStyles
   },
   listContainer: {
     flex: 1,
@@ -567,6 +673,7 @@ const styles = StyleSheet.create({
     height: '100%',
     left: '50%',
     transform: [{ translateX: -1 }],
+    backgroundColor: 'white',
   },
   plusHorizontal: {
     position: 'absolute',
@@ -574,15 +681,13 @@ const styles = StyleSheet.create({
     height: 2,
     top: '50%',
     transform: [{ translateY: -1 }],
+    backgroundColor: 'white',
   },
   separator: {
     height: 1,
     marginVertical: 8,
   },
   deleteButton: {
-    position: 'absolute',
-    top: 8,
-    right: 10,
     padding: 8,
   },
   formScrollView: {
@@ -599,5 +704,11 @@ const styles = StyleSheet.create({
   },
   datePicker: {
     marginBottom: 16,
+  },
+  deleteButtonBackground: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    paddingHorizontal: 20,
   },
 }); 
