@@ -5,8 +5,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, FlatList, Keyboard, KeyboardAvoidingView, Modal, Platform, Pressable, StyleSheet, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import SwipeableItem from 'react-native-swipeable-item';
+import { GestureHandlerRootView, PanGestureHandler } from 'react-native-gesture-handler';
+import Animated, { runOnJS, useAnimatedGestureHandler, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 
 // Types for folder and note structure
 type Note = {
@@ -28,15 +28,13 @@ type Folder = {
 
 type NavigationState = {
   currentFolderId: string | null;
-  breadcrumbs: Array<{ id: string; name: string }>;
 };
 
 export default function NotesScreen() {
   const [folders, setFolders] = useState<Folder[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
   const [navigationState, setNavigationState] = useState<NavigationState>({
-    currentFolderId: null,
-    breadcrumbs: []
+    currentFolderId: null
   });
   
   // Modal states
@@ -51,6 +49,10 @@ export default function NotesScreen() {
   
   const theme = useTheme();
   const contentInputRef = useRef<TextInput>(null);
+
+  // --- Add refs for swipeable items ---
+  const folderSwipeableRefs = useRef<{ [key: string]: any }>({});
+  const noteSwipeableRefs = useRef<{ [key: string]: any }>({});
 
   // Create dynamic styles based on theme
   const dynamicStyles = useMemo(() => ({
@@ -91,9 +93,6 @@ export default function NotesScreen() {
     },
     plusHorizontal: {
       backgroundColor: theme.colors.background,
-    },
-    breadcrumbItem: {
-      backgroundColor: theme.colors.containerBackgroundActive,
     },
   }), [theme]);
 
@@ -265,75 +264,27 @@ export default function NotesScreen() {
   };
 
   const handleDeleteFolder = (folderId: string) => {
-    Alert.alert(
-      "Delete Folder",
-      "Are you sure you want to delete this folder? All notes and subfolders inside will also be deleted.",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: () => {
-            // Delete the folder and all its subfolders recursively
-            const foldersToDelete = new Set<string>();
-            const addFolderAndSubfolders = (id: string) => {
-              foldersToDelete.add(id);
-              folders.forEach(folder => {
-                if (folder.parentId === id) {
-                  addFolderAndSubfolders(folder.id);
-                }
-              });
-            };
-            addFolderAndSubfolders(folderId);
-            
-            setFolders(folders.filter(f => !foldersToDelete.has(f.id)));
-            setNotes(notes.filter(n => !foldersToDelete.has(n.folderId || '')));
-          }
+    // Delete the folder and all its subfolders recursively
+    const foldersToDelete = new Set<string>();
+    const addFolderAndSubfolders = (id: string) => {
+      foldersToDelete.add(id);
+      folders.forEach(folder => {
+        if (folder.parentId === id) {
+          addFolderAndSubfolders(folder.id);
         }
-      ]
-    );
+      });
+    };
+    addFolderAndSubfolders(folderId);
+    setFolders(folders.filter(f => !foldersToDelete.has(f.id)));
+    setNotes(notes.filter(n => !foldersToDelete.has(n.folderId || '')));
   };
 
   const handleDeleteNote = (noteId: string) => {
-    Alert.alert(
-      "Delete Note",
-      "Are you sure you want to delete this note?",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: () => setNotes(notes.filter(n => n.id !== noteId))
-        }
-      ]
-    );
+    setNotes(notes.filter(n => n.id !== noteId));
   };
 
   const handleFolderPress = (folder: Folder) => {
-    const newNavigationState = {
-      currentFolderId: folder.id,
-      breadcrumbs: [...navigationState.breadcrumbs, { id: folder.id, name: folder.name }]
-    };
-    
-    setNavigationState(newNavigationState);
-  };
-
-  const handleBreadcrumbPress = (index: number) => {
-    if (index === -1) {
-      // Root level
-      setNavigationState({
-        currentFolderId: null,
-        breadcrumbs: []
-      });
-    } else {
-      // Navigate to specific folder
-      const newBreadcrumbs = navigationState.breadcrumbs.slice(0, index + 1);
-      const targetFolder = newBreadcrumbs[newBreadcrumbs.length - 1];
-      setNavigationState({
-        currentFolderId: targetFolder.id,
-        breadcrumbs: newBreadcrumbs
-      });
-    }
+    setNavigationState({ currentFolderId: folder.id });
   };
 
   const getCurrentFolderName = () => {
@@ -351,33 +302,32 @@ export default function NotesScreen() {
         style={{ flex: 1 }}
       >
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-            {/* Header with breadcrumbs */}
+          <View style={[styles.container, { backgroundColor: theme.colors.background }]}> 
+            {/* Header */}
             <View style={styles.header}>
-              <View style={styles.headerTop}>
-                <ThemedText style={[styles.headerTitle, theme.typography.header]}>
-                  {getCurrentFolderName()}
-                </ThemedText>
-              </View>
-              {navigationState.breadcrumbs.length > 0 && (
-                <View style={styles.breadcrumbsContainer}>
+              <View style={styles.headerRow}>
+                {navigationState.currentFolderId !== null && (
                   <TouchableOpacity
-                    style={[styles.breadcrumbItem, dynamicStyles.breadcrumbItem]}
-                    onPress={() => handleBreadcrumbPress(-1)}
+                    style={styles.headerBackButton}
+                    onPress={() => {
+                      if (navigationState.currentFolderId) {
+                        const currentFolder = folders.find(f => f.id === navigationState.currentFolderId);
+                        setNavigationState({
+                          currentFolderId: currentFolder?.parentId ?? null
+                        });
+                      }
+                    }}
                   >
-                    <ThemedText style={[styles.breadcrumbText, theme.typography.caption]}>Notes</ThemedText>
+                    <IconSymbol name="chevron.left" size={20} color={theme.colors.tint} />
+                    <ThemedText style={[styles.backButtonText, theme.typography.body]}>Back</ThemedText>
                   </TouchableOpacity>
-                  {navigationState.breadcrumbs.map((breadcrumb, index) => (
-                    <React.Fragment key={breadcrumb.id}>
-                      <ThemedText style={[styles.breadcrumbSeparator, theme.typography.caption]}>›</ThemedText>
-                      <TouchableOpacity
-                        style={[styles.breadcrumbItem, dynamicStyles.breadcrumbItem]}
-                        onPress={() => handleBreadcrumbPress(index)}
-                      >
-                        <ThemedText style={[styles.breadcrumbText, theme.typography.caption]}>{breadcrumb.name}</ThemedText>
-                      </TouchableOpacity>
-                    </React.Fragment>
-                  ))}
+                )}
+              </View>
+              {navigationState.currentFolderId !== null && (
+                <View style={styles.headerTitleRow}>
+                  <ThemedText style={[styles.headerTitle, theme.typography.header]}>
+                    {getCurrentFolderName()}
+                  </ThemedText>
                 </View>
               )}
             </View>
@@ -389,8 +339,8 @@ export default function NotesScreen() {
                   <IconSymbol name="folder" size={48} color={theme.colors.tabIconDefault} />
                   <ThemedText style={[styles.emptyStateText, theme.typography.body]}>
                     {navigationState.currentFolderId === null 
-                      ? 'No folders or notes yet. Create your first folder or note!' 
-                      : 'This folder is empty. Create a new note or subfolder to get started!'}
+                      ? 'Create your first folder or note to get started!' 
+                      : 'This folder is empty.'}
                   </ThemedText>
                 </View>
               )}
@@ -398,98 +348,37 @@ export default function NotesScreen() {
                 data={[...currentFolders, ...currentNotes]}
                 keyExtractor={(item) => item.id}
                 contentContainerStyle={styles.listContent}
-                renderItem={({ item }) => {
-                  // Check if item is a folder
-                  if ('name' in item) {
-                    const folder = item as Folder;
-                    return (
-                      <SwipeableItem
-                        key={folder.id}
-                        item={folder}
-                        renderUnderlayLeft={() => (
-                          <View style={[styles.deleteUnderlay, { backgroundColor: '#FF3B30' }]}>
-                            <TouchableOpacity
-                              style={styles.deleteButton}
-                              onPress={() => handleDeleteFolder(folder.id)}
-                            >
-                              <IconSymbol name="trash.fill" size={24} color="white" />
-                            </TouchableOpacity>
-                          </View>
-                        )}
-                        snapPointsLeft={[80]}
-                      >
-                        <View style={styles.folderContainer}>
-                          <Pressable
-                            style={[styles.folderItem, dynamicStyles.folderItem]}
-                            onPress={() => handleFolderPress(folder)}
-                          >
-                            <View style={styles.itemContent}>
-                              <IconSymbol name="folder.fill" size={24} color="#2196F3" />
-                              <View style={styles.itemTextContainer}>
-                                <ThemedText style={[styles.itemTitle, theme.typography.body]}>{folder.name}</ThemedText>
-                                <ThemedText style={[styles.itemSubtitle, theme.typography.caption]}>
-                                  {(() => {
-                                    // Count notes in this folder and all subfolders
-                                    const countNotesInFolder = (folderId: string): number => {
-                                      let count = notes.filter(n => n.folderId === folderId).length;
-                                      folders.forEach(subfolder => {
-                                        if (subfolder.parentId === folderId) {
-                                          count += countNotesInFolder(subfolder.id);
-                                        }
-                                      });
-                                      return count;
-                                    };
-                                    return countNotesInFolder(folder.id);
-                                  })()} notes
-                                </ThemedText>
-                              </View>
-                              <IconSymbol name="chevron.right" size={16} color="#2196F3" />
-                            </View>
-                          </Pressable>
-                        </View>
-                      </SwipeableItem>
-                    );
-                  } else {
-                    // Item is a note
-                    const note = item as Note;
-                    return (
-                      <SwipeableItem
-                        key={note.id}
-                        item={note}
-                        renderUnderlayLeft={() => (
-                          <View style={[styles.deleteUnderlay, { backgroundColor: '#FF3B30' }]}>
-                            <TouchableOpacity
-                              style={styles.deleteButton}
-                              onPress={() => handleDeleteNote(note.id)}
-                            >
-                              <IconSymbol name="trash.fill" size={24} color="white" />
-                            </TouchableOpacity>
-                          </View>
-                        )}
-                        snapPointsLeft={[80]}
-                      >
-                        <View style={styles.noteContainer}>
-                          <Pressable
-                            style={[styles.noteItem, dynamicStyles.noteItem]}
-                            onPress={() => handleEditNote(note)}
-                          >
-                            <View style={styles.itemContent}>
-                              <IconSymbol name="doc.text.fill" size={24} color="#9C27B0" />
-                              <View style={styles.itemTextContainer}>
-                                <ThemedText style={[styles.itemTitle, theme.typography.body]}>
-                                  {note.content.split('\n')[0] || 'Empty Note'}
-                                </ThemedText>
-                              </View>
-                            </View>
-                          </Pressable>
-                        </View>
-                      </SwipeableItem>
-                    );
+                renderItem={({ item, index }) => {
+                  const isFolder = 'name' in item;
+                  let showSeparator = false;
+                  if (isFolder && index === currentFolders.length - 1 && currentNotes.length > 0) {
+                    // Show separator after the last folder if there are notes
+                    showSeparator = true;
                   }
+                  return (
+                    <>
+                      <SwipeableRow
+                        item={item}
+                        isFolder={isFolder}
+                        onDelete={id => {
+                          if (isFolder) handleDeleteFolder(id);
+                          else handleDeleteNote(id);
+                        }}
+                        onPress={item => {
+                          if (isFolder) handleFolderPress(item);
+                          else handleEditNote(item);
+                        }}
+                        theme={theme}
+                        dynamicStyles={dynamicStyles}
+                        notes={notes}
+                        folders={folders}
+                      />
+                      {showSeparator && (
+                        <View style={[styles.separator, dynamicStyles.separator]} />
+                      )}
+                    </>
+                  );
                 }}
-                ItemSeparatorComponent={() => (
-                  <View style={[styles.separator, dynamicStyles.separator]} />
-                )}
                 style={styles.list}
               />
             </View>
@@ -607,32 +496,210 @@ export default function NotesScreen() {
                 <IconSymbol name="note.text.badge.plus" size={24} color="white" />
               </TouchableOpacity>
             </View>
-
-            {/* Back Button */}
-            {navigationState.currentFolderId !== null && (
-              <TouchableOpacity 
-                style={[styles.backFloatingButton, { backgroundColor: theme.colors.background }]}
-                onPress={() => {
-                  if (navigationState.breadcrumbs.length > 0) {
-                    const newBreadcrumbs = navigationState.breadcrumbs.slice(0, -1);
-                    const parentFolderId = newBreadcrumbs.length > 0 
-                      ? newBreadcrumbs[newBreadcrumbs.length - 1].id 
-                      : null;
-                    setNavigationState({
-                      currentFolderId: parentFolderId,
-                      breadcrumbs: newBreadcrumbs
-                    });
-                  }
-                }}
-              >
-                <IconSymbol name="chevron.left" size={24} color={theme.colors.tint} />
-                <ThemedText style={[styles.backButtonText, theme.typography.body]}>Back</ThemedText>
-              </TouchableOpacity>
-            )}
           </View>
         </TouchableWithoutFeedback>
       </KeyboardAvoidingView>
     </GestureHandlerRootView>
+  );
+}
+
+// --- SwipeableRow component ---
+function SwipeableRow({
+  item,
+  isFolder,
+  onDelete,
+  onPress,
+  theme,
+  dynamicStyles,
+  notes,
+  folders
+}: {
+  item: any;
+  isFolder: boolean;
+  onDelete: (id: string) => void;
+  onPress: (item: any) => void;
+  theme: any;
+  dynamicStyles: any;
+  notes: Note[];
+  folders: Folder[];
+}) {
+  const id = item.id;
+  const translateX = useSharedValue(0);
+  const deleteOpacity = useSharedValue(0);
+
+  const resetAnimation = () => {
+    translateX.value = withSpring(0);
+    deleteOpacity.value = withSpring(0);
+  };
+
+  // Show Alert only once per swipe
+  const alertShownRef = React.useRef(false);
+
+  const showDeleteAlert = () => {
+    if (alertShownRef.current) return;
+    alertShownRef.current = true;
+    Alert.alert(
+      isFolder ? 'Delete Folder' : 'Delete Note',
+      isFolder
+        ? 'Are you sure you want to delete this folder? All notes and subfolders inside will also be deleted.'
+        : 'Are you sure you want to delete this note?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+          onPress: () => {
+            resetAnimation();
+            alertShownRef.current = false;
+          },
+        },
+        {
+          text: isFolder ? 'Delete' : 'Delete',
+          style: 'destructive',
+          onPress: () => {
+            onDelete(id);
+            alertShownRef.current = false;
+          },
+        },
+      ]
+    );
+  };
+
+  const gestureHandler = useAnimatedGestureHandler({
+    onStart: (_, context: any) => {
+      context.startX = translateX.value;
+      context.startY = 0;
+    },
+    onActive: (event, context: any) => {
+      if (Math.abs(event.translationX) > Math.abs(event.translationY)) {
+        const newTranslateX = context.startX + event.translationX;
+        translateX.value = Math.min(0, Math.max(-80, newTranslateX));
+        if (translateX.value < -40) {
+          deleteOpacity.value = withSpring(1);
+        } else {
+          deleteOpacity.value = withSpring(0);
+        }
+      }
+    },
+    onEnd: (event, context: any) => {
+      if (
+        Math.abs(event.translationX) > Math.abs(event.translationY) &&
+        event.translationX < -60
+      ) {
+        // Show Alert (on JS thread)
+        runOnJS(showDeleteAlert)();
+        // Do NOT reset animation here; wait for Alert response
+      } else {
+        translateX.value = withSpring(0);
+        deleteOpacity.value = withSpring(0);
+        runOnJS(() => {
+          alertShownRef.current = false;
+        })();
+      }
+    },
+  });
+
+  const animatedStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ translateX: translateX.value }],
+    };
+  });
+
+  const deleteButtonStyle = useAnimatedStyle(() => {
+    return {
+      opacity: deleteOpacity.value,
+    };
+  });
+
+  return (
+    <View style={styles.itemContainer}>
+      {/* Delete Button Background */}
+      <Animated.View
+        style={[
+          styles.deleteUnderlay,
+          deleteButtonStyle,
+          {
+            backgroundColor: '#FF3B30',
+            position: 'absolute',
+            right: 0,
+            left: 0,
+            top: 0,
+            bottom: 0,
+            zIndex: 0,
+            justifyContent: 'flex-end',
+            alignItems: 'center',
+            flexDirection: 'row',
+          },
+        ]}
+      >
+        <TouchableOpacity
+          style={styles.deleteButton}
+          onPress={showDeleteAlert}
+        >
+          <IconSymbol name="trash.fill" size={24} color="white" />
+        </TouchableOpacity>
+      </Animated.View>
+
+      {/* Main Content */}
+      <PanGestureHandler
+        onGestureEvent={gestureHandler}
+        activeOffsetX={[-10, 10]}
+        failOffsetY={[-10, 10]}
+      >
+        <Animated.View
+          style={[
+            isFolder ? styles.folderItem : styles.noteItem,
+            animatedStyle,
+            { zIndex: 1 },
+          ]}
+        >
+          {isFolder ? (
+            <Pressable
+              style={[styles.folderItem, dynamicStyles.folderItem]}
+              onPress={() => onPress(item)}
+            >
+              <View style={styles.itemContent}>
+                <IconSymbol name="folder.fill" size={24} color="#2196F3" />
+                <View style={styles.itemTextContainer}>
+                  <ThemedText style={[styles.itemTitle, theme.typography.body]}>
+                    {item.name}
+                  </ThemedText>
+                  <ThemedText style={[styles.itemSubtitle, theme.typography.caption]}>
+                    {(() => {
+                      // Count notes in this folder and all subfolders
+                      const countNotesInFolder = (folderId: string): number => {
+                        let count = notes.filter((n) => n.folderId === folderId).length;
+                        folders.forEach((subfolder) => {
+                          if (subfolder.parentId === folderId) {
+                            count += countNotesInFolder(subfolder.id);
+                          }
+                        });
+                        return count;
+                      };
+                      return countNotesInFolder(item.id);
+                    })()} notes
+                  </ThemedText>
+                </View>
+                <IconSymbol name="chevron.right" size={16} color="#2196F3" />
+              </View>
+            </Pressable>
+          ) : (
+            <Pressable
+              style={[styles.noteItem, dynamicStyles.noteItem]}
+              onPress={() => onPress(item)}
+            >
+              <View style={styles.itemContent}>
+                <IconSymbol name="doc.text.fill" size={24} color="#9C27B0" />
+                <View style={styles.itemTextContainer}>
+                  <ThemedText style={[styles.itemTitle, theme.typography.body]}>
+                    {item.content.split('\n')[0] || 'Empty Note'}
+                  </ThemedText>
+                </View>
+              </View>
+            </Pressable>
+          )}
+        </Animated.View>
+      </PanGestureHandler>
+    </View>
   );
 }
 
@@ -643,33 +710,38 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 16,
-    paddingBottom: 16,
+    paddingBottom: 4,
+    paddingTop: 12,
   },
-  headerTop: {
+  headerRow: {
     flexDirection: 'row',
+    alignItems: 'flex-start',
+    minHeight: 28,
+    marginBottom: 0,
+  },
+  headerTitleRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 8,
+    minHeight: 32,
+    marginBottom: 4,
   },
   headerTitle: {
     flex: 1,
     textAlign: 'center',
   },
-  breadcrumbsContainer: {
+  headerBackButton: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  breadcrumbItem: {
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 4,
-    marginRight: 4,
+    borderRadius: 6,
+    marginLeft: 8,
   },
-  breadcrumbText: {
-    opacity: 0.8,
-  },
-  breadcrumbSeparator: {
-    marginHorizontal: 4,
-    opacity: 0.5,
+  backButtonText: {
+    color: '#007AFF',
+    fontWeight: '500',
+    marginLeft: 4,
   },
   actionButtons: {
     flexDirection: 'row',
@@ -708,7 +780,7 @@ const styles = StyleSheet.create({
     // No alignment - let items use their natural width
   },
   itemContainer: {
-    marginBottom: 8,
+    marginBottom: 0, // remove extra space between items, separators will handle folder spacing
   },
   folderContainer: {
     marginBottom: 8,
@@ -731,7 +803,7 @@ const styles = StyleSheet.create({
     maxWidth: '80%',
   },
   noteItem: {
-    padding: 12,
+    padding: 10,
     borderRadius: 12,
     elevation: 2,
     shadowColor: '#000',
@@ -849,19 +921,5 @@ const styles = StyleSheet.create({
     height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  backFloatingButton: {
-    position: 'absolute',
-    bottom: 32,
-    left: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-    borderRadius: 6,
-  },
-  backButtonText: {
-    color: '#007AFF',
-    fontWeight: '500',
-    marginLeft: 4,
   },
 }); 
