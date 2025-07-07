@@ -384,14 +384,14 @@ export default function SettingsScreen() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ThemedView style={styles.container}>
-        <View style={styles.section}>
-          <ThemedText style={styles.sectionTitle}>
-            Field Visibility
-          </ThemedText>
+        {/* Header-style container for description */}
+        <View style={styles.header}> 
           <ThemedText style={styles.sectionDescription}>
-            Choose which fields to show in your daily notes. Hidden fields will preserve their data.
+            Hidden fields will preserve their data.
           </ThemedText>
-
+        </View>
+        {/* Section for the rest of the content */}
+        <View style={styles.section}>
           {/* Draggable Fields List */}
           <DraggableFlatList
             data={allFields}
@@ -522,14 +522,14 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 16,
   },
-  sectionTitle: {
-    ...Typography.sectionTitle,
-    marginBottom: 12,
-  },
   sectionDescription: {
     ...Typography.body,
     opacity: 0.7,
-    marginBottom: 16,
+    // marginBottom: 16, // Remove this line to match History
+  },
+  header: {
+    padding: 20,
+    paddingBottom: 6,
   },
   draggableListContent: {
     paddingBottom: 100, // Space for floating button
@@ -706,7 +706,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
   },
   disabledButton: {
-    backgroundColor: '#0077FF',
+    backgroundColor: '#2D6ECF', // lighter blue for disabled state
   },
   deleteBackground: {
     position: 'absolute',
