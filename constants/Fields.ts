@@ -5,7 +5,6 @@ export interface Field {
   key: string;
   label: string;
   placeholder: string;
-  hasSpecialText: boolean;
 }
 
 export const defaultFields: Field[] = [
@@ -14,70 +13,66 @@ export const defaultFields: Field[] = [
     key: 'planVida',
     label: "Plan de vida y trato con el Señor:",
     placeholder: "",
-    hasSpecialText: false,
   },
   {
     id: 2,
     key: 'mortificacion',
     label: "Mortificación y espíritu de sacrificio. Carácter:",
     placeholder: "",
-    hasSpecialText: true,
   },
   {
     id: 3,
     key: 'presenciaDios',
     label: "Presencia de Dios y aprovechamiento del tiempo:",
     placeholder: "",
-    hasSpecialText: false,
   },
   {
     id: 4,
     key: 'fePurezaVocacion',
     label: "Fe / Pureza / Vocación:",
     placeholder: "",
-    hasSpecialText: false,
   },
   {
     id: 5,
     key: 'trabajoEstudio',
     label: "Trabajo / Estudio:",
     placeholder: "",
-    hasSpecialText: false,
   },
   {
     id: 6,
     key: 'fraternidad',
     label: "Fraternidad, amigos y apostolado:",
     placeholder: "",
-    hasSpecialText: false,
   },
   {
     id: 7,
     key: 'familia',
     label: "Familia:",
     placeholder: "",
-    hasSpecialText: false,
   },
   {
     id: 8,
     key: 'pobrezaGenerosidad',
     label: "Pobreza y generosidad:",
     placeholder: "",
-    hasSpecialText: false,
   },
   {
     id: 9,
     key: 'preocupaciones',
     label: "Preocupaciones, tristezas, alegrías y preguntas:",
     placeholder: "",
-    hasSpecialText: false,
   },
   {
     id: 10,
     key: 'puntoLucha',
     label: "Punto de lucha:",
     placeholder: "",
-    hasSpecialText: false,
+  },
+  {
+    id: 11,
+    key: 'libros',
+    label: "Libros:",
+    placeholder: "",
   },
 ];
 
@@ -282,6 +277,7 @@ export const descriptions = {
   pobrezaGenerosidad: "Pobreza y generosidad",
   preocupaciones: "Preocupaciones, tristezas, alegrías",
   puntoLucha: "Punto de lucha",
+  libros: "Libros",
 };
 
 export const personalQuestions: Record<number, string> = {
