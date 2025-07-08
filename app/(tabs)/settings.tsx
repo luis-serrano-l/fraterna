@@ -105,8 +105,7 @@ export default function SettingsScreen() {
       const newField = await addCustomField({
         key,
         label: fieldLabel.trim(),
-        placeholder: '',
-        hasSpecialText: false,
+        placeholder: ''
       });
 
       // Update field order to include the new field at the end
