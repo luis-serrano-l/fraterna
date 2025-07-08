@@ -281,58 +281,58 @@ export const descriptions = {
 };
 
 export const personalQuestions: Record<number, string> = {
-  1: `1. ¿Procuro que mi vida de oración sea alimento diario para el alma, buscando momentos concretos para acudir al Señor y santificar el trabajo y la vida entera?
-2. ¿Vivo las normas de piedad como un itinerario flexible y adaptado a mis circunstancias, evitando que se conviertan en compartimentos estancos o en una rutina vacía?
-3. ¿Preveo con anticipación las dificultades que pueden impedir el cumplimiento de mi plan de vida, y pongo los medios para perseverar en la oración y el trato con Dios?
-4. ¿Busco cada vez un trato más íntimo y amoroso con Jesús, centrando mi vida cristiana en amarle e imitarle, y no solo en evitar el mal?`,
+  1: `1. ¿Busco momentos concretos para rezar y trato de que la oración sea parte esencial de mi día?
+2. ¿Procuro vivir las normas de piedad con flexibilidad y sinceridad, evitando la rutina?
+3. ¿Pongo medios para superar las dificultades que pueden afectar mi plan de vida espiritual?
+4. ¿Intento crecer en mi relación personal con Jesús, amándole y siguiéndole cada vez más?`,
 
   2: `1. ¿Me dejo llevar por tendencias hedonistas que rechazan la contrariedad?
 2. ¿Tengo un espíritu de mortificación estable o solo actos esporádicos?
 3. ¿Acepto las mortificaciones pasivas con paz interior o me quejo?
 4. ¿Practico la mortificación interior apartando pensamientos inútiles?`,
 
-  3: `1. ¿Vivo con la conciencia de estar siempre en presencia de Dios, procurando comportarme dignamente como hijo suyo y considerando mis decisiones delante de Él?
-2. ¿Elevo mi corazón a Dios muchas veces al día, dándole gracias por todo, y procuro mantenerme unido a Él mediante jaculatorias, comuniones espirituales y actos de amor?
-3. ¿Aprovecho los signos visibles de la fe (Sagrarios, imágenes, la Cruz) para renovar mi presencia de Dios y mi unión con Jesús y María en medio de las ocupaciones diarias?
-4. ¿Aprovecho el paso del tiempo y la brevedad de la vida como una invitación a la generosidad, la lealtad y el amor, evitando malgastar el tesoro de cada día?
-5. ¿Procuro que mi tiempo y mis talentos rindan para Dios y para el bien de los demás, evitando la tibieza, la pereza y el egoísmo?
-6. ¿Vivo mi vida como un instrumento de Dios, cuidando los detalles pequeños de mi vida, convencido de que mi tiempo no me pertenece, sino que es del Padre?`,
+  3: `1. ¿Procuro vivir cada momento con la conciencia de que Dios está presente, tomando decisiones que reflejen mi dignidad de hijo suyo?
+2. ¿Agradezco a Dios a lo largo del día y busco mantenerme unido a Él mediante jaculatorias, comuniones espirituales y actos de amor?
+3. ¿Utilizo los signos de la fe, como el Sagrario o la Cruz, para renovar mi unión con Dios en medio de mis actividades diarias?
+4. ¿Valoro el tiempo como un don de Dios, esforzándome en ser generoso y leal, y evitando desperdiciar los días que se me conceden?
+5. ¿Empleo mis talentos y mi tiempo para servir a Dios y a los demás, luchando contra la pereza y el egoísmo?
+6. ¿Vivo atento a los pequeños detalles, convencido de que mi vida y mi tiempo pertenecen a Dios y deben ser instrumentos para su voluntad?`,
 
-  4: `1. ¿Cómo se manifiesta mi fe en los acontecimientos ordinarios de mi vida diaria, especialmente en las dificultades, enfermedades o contradicciones?
-2. ¿Veo los sucesos menos agradables como parte del plan providencial de Dios, evitando la queja y el tono negativo, y los ofrezco como medio de santificación?
-3. ¿Conozco y respeto los compromisos y criterios morales que implica la tarea a la que Dios me llama, siendo leal a la Iglesia y fiel a la palabra dada y a los compromisos libremente adquiridos?
-4. ¿Doy ejemplo alegre de pureza, mostrando con mi vida la belleza, la generosidad y la alegría que se derivan de esta virtud?`,
+  4: `1. ¿Cómo se refleja mi fe en las situaciones cotidianas, especialmente cuando enfrento dificultades, enfermedades o contratiempos?
+2. ¿Procuro aceptar los momentos menos agradables como parte del plan de Dios, evitando la queja y el desánimo, y los ofrezco como oportunidad de crecimiento?
+3. ¿Conozco y cumplo los compromisos y valores morales que implica mi vocación, siendo leal a la Iglesia y fiel a mis promesas y responsabilidades?
+4. ¿Doy testimonio alegre de pureza, mostrando con mi vida la belleza, generosidad y alegría que nacen de esta virtud?`,
 
-  5: `1. ¿Procuro encontrar al Señor en medio de mi trabajo, ofreciéndole mi labor como una ofrenda diaria y sintiéndome partícipe de la Creación en lo que ejecuto, aunque parezca pequeño?
-2. ¿Cultivo las virtudes de la convivencia en mi trabajo, prestando esos pequeños servicios que tanto se agradecen, rezando por mis colegas y ayudándoles a resolver sus problemas?
-3. ¿Busco la gloria de Dios en mi trabajo o me dejo llevar por motivos egoístas como la ambición, vanidad o ansias de ser considerado, olvidando que el éxito consiste en cumplir la voluntad divina?
-4. ¿Cuido mi prestigio profesional siendo ejemplar y competente en mis quehaceres, viviendo la justicia y las demás virtudes morales, sin que esto enmascare fines egoístas?
-5. ¿Cumplo acabadamente las obligaciones diarias para con Dios y dedico a mi formación espiritual y humana el tiempo debido, manteniendo la unidad de vida?`,
+  5: `1. ¿Procuro ofrecer mi trabajo diario a Dios, buscando su presencia en las tareas grandes y pequeñas?
+2. ¿Colaboro con mis compañeros de trabajo, mostrando espíritu de servicio y ayudando cuando lo necesitan?
+3. ¿Trabajo con rectitud de intención, evitando la búsqueda de reconocimiento personal y poniendo a Dios en primer lugar?
+4. ¿Me esfuerzo por ser responsable y justo en mis obligaciones laborales, cuidando la calidad y honestidad en lo que hago?
+5. ¿Dedico tiempo a mi formación profesional y espiritual, procurando crecer como persona y cristiano en el ámbito laboral?`,
 
-  6: `1. ¿Se manifiesta mi vida interior en el trato con los demás, facilitando a quienes están cerca el camino hacia el Señor mediante la amistad, la cordialidad y el sentido positivo de la vida?
-2. ¿Me preocupo activamente por la santidad de los que me rodean, ayudándoles con la corrección fraterna, la oración, el cuidado por los enfermos y el esfuerzo por hacerles la vida más amable?
-3. ¿Procuro que mi caridad se traduzca en obras concretas, como el espíritu de servicio en la familia, la generosidad con el tiempo y los bienes, y la comprensión con todos?
-4. ¿Mantengo el celo apostólico incluso en la enfermedad, el aislamiento o la dificultad, ofreciendo mis oraciones y sacrificios por la salvación de las almas, convencido de que nada se pierde cuando se trabaja por Dios?`,
+  6: `1. ¿Procuro que mi trato con los demás refleje mi vida interior, mostrando amabilidad y apertura a todos?
+2. ¿Me intereso sinceramente por las personas que me rodean, rezando por ellas y ayudando en lo que puedo?
+3. ¿Busco oportunidades para servir y ser generoso con mi tiempo y recursos, tanto en la familia como con amigos?
+4. ¿Mantengo el deseo de ayudar a otros a acercarse a Dios, incluso en momentos de dificultad o cansancio?`,
 
-  7: `1. ¿Procuro ser instrumento de unión entre los diversos miembros de mi familia a través del servicio gustoso y de los pequeños sacrificios diarios en favor de los demás, esforzándome para que cada uno mejore en sus relaciones con Dios?
-2. ¿Hago presente a Dios en el hogar con costumbres cristianas como la bendición de la mesa, rezar con los hijos, leer algún versículo del Evangelio, asistir juntos a la Santa Misa, y cuando sea posible, el Santo Rosario?
-3. ¿Ayudo a mis padres con abnegación y cariño, cumpliendo el Cuarto Mandamiento como un "dulcísimo precepto" que tiene sus raíces en la paternidad de Dios?
-4. ¿Mi alegría y ejemplaridad preceden al apostolado con mi cónyuge, hijos y otras familias, naciendo de una vida fundamentada en la oración y de la correspondencia imaginativa a la vocación matrimonial que he recibido de Dios?`,
+  7: `1. ¿Contribuyo a la unidad y el buen ambiente en mi familia mediante pequeños detalles de servicio y comprensión?
+2. ¿Procuro que Dios esté presente en mi hogar a través de la oración y costumbres cristianas sencillas?
+3. ¿Ayudo a mis padres y familiares con cariño y responsabilidad, cumpliendo mis deberes familiares con alegría?
+4. ¿Intento ser ejemplo de fe y alegría para mi familia, apoyando a cada uno en su camino hacia Dios?`,
 
-  8: `1. ¿Estoy desprendido de los bienes materiales, disfrutándolos como bondad creada de Dios, pero sin considerar necesarias cosas de las que puedo prescindir con un poco de buena voluntad?
-2. ¿Procuro hacer rendir mis talentos en beneficio de toda la sociedad, cuidando la ropa e instrumentos de trabajo, evitando gastos desproporcionados y escogiendo para mí lo peor en la intimidad familiar?
-3. ¿Evito gastos personales motivados por el capricho, la vanidad, el deseo de lujo o la poltronería, siendo austero conmigo mismo y generoso siempre con los demás?
-4. ¿Acepto con paz y alegría la escasez o la falta de lo necesario, ofreciendo estas dificultades para crecer en el sentido de la filiación divina y disponiendo mi alma para los bienes sobrenaturales?`,
+  8: `1. ¿Vivo con sencillez y desprendimiento de los bienes materiales, valorando lo que tengo sin apegarme a ello?
+2. ¿Utilizo mis talentos y recursos para el bien de los demás, evitando el derroche y la búsqueda de lujos innecesarios?
+3. ¿Soy generoso con los que me rodean, compartiendo lo que tengo y ayudando a quienes lo necesitan?
+4. ¿Acepto con serenidad las dificultades materiales, confiando en la providencia de Dios y aprendiendo de cada situación?`,
 
-  9: `1. ¿Lucho para estar siempre alegre, procurando olvidarme de mí mismo y aceptando las contradicciones, o me dejo llevar por la tristeza que es origen de muchos males y debilita mi alma para el bien?
-2. ¿Tengo como sumo gozo haber encontrado al Señor en mi vida y como fundamento de mi existencia el ser y sentirme hijo de Dios, extendiendo esa alegría a la familia, amigos y compañeros de trabajo?
-3. ¿Fomento la alegría de modo positivo, venciendo los estados de ánimo tristes y pesimistas, considerando el amor de Dios por mí y el valor del sufrimiento unido a la Cruz, o espero a que la alegría se presente sola?
-4. ¿Mantengo la paz y la alegría incluso en medio del dolor, la pobreza o la enfermedad, con la mirada puesta en el Señor y siendo generoso en lo que pide, o busco compensaciones que llenen el vacío de la falta de alegría?`,
+  9: `1. ¿Procuro mantener la alegría y el optimismo, superando la tristeza y las dificultades con esperanza cristiana?
+2. ¿Reconozco la presencia de Dios en mi vida como fuente de alegría, compartiéndola con quienes me rodean?
+3. ¿Busco motivos para agradecer y sonreír cada día, incluso cuando las cosas no salen como espero?
+4. ¿Mantengo la paz interior en medio de los problemas, confiando en el amor de Dios y evitando buscar consuelos superficiales?`,
 
-  10: `1. ¿Me conozco a mí mismo como me contempla Dios, viendo con claridad sin falsas excusas lo que es ocasión de pecado o de alejamiento del Señor, y pongo los remedios oportunos?
-2. ¿Tengo un examen particular bien definido sobre un punto concreto de lucha, ya sea para arrancar un defecto que predomina o para adquirir una virtud determinada, luchando eficazmente en lo que más necesita mi alma?
-3. ¿Mediante el examen general llego a conocer las raíces de mi actuar: el porqué de mi malhumor, la falta de rectitud de intención, el origen de las faltas de caridad continuadas con una misma persona?
-4. ¿Me manifiesto con sencillez en la dirección espiritual, mostrando tanto los frutos como las flaquezas, ejercitando así la humildad y la sinceridad que son parte esencial del conocimiento propio?`,
+  10: `1. ¿Me esfuerzo por conocerme a mí mismo, reconociendo mis virtudes y defectos con sinceridad ante Dios?
+2. ¿Tengo un propósito concreto de mejora personal y lucho por alcanzarlo con constancia?
+3. ¿Reflexiono sobre las causas de mis errores y busco soluciones prácticas para superarlos?
+4. ¿Comparto con humildad mis avances y dificultades en la dirección espiritual, buscando crecer en sinceridad y autoconocimiento?`,
 };
 
 // Create mappings for easy access (will be updated dynamically)
