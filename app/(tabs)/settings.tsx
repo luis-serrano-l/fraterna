@@ -486,18 +486,15 @@ export default function SettingsScreen() {
                     style={[
                       styles.addButton,
                       { backgroundColor: theme.colors.buttonPrimary },
-                      ((modalMode === 'edit' && fieldLabel.trim() === originalFieldLabel) || 
-                       (modalMode === 'add' && !fieldLabel.trim())) && styles.disabledButton
+                      (modalMode === 'add' && !fieldLabel.trim()) && styles.disabledButton
                     ]}
                     onPress={modalMode === 'add' ? handleAddField : handleSaveFieldEdit}
-                    disabled={(modalMode === 'edit' && fieldLabel.trim() === originalFieldLabel) || 
-                             (modalMode === 'add' && !fieldLabel.trim())}
+                    disabled={modalMode === 'add' && !fieldLabel.trim()}
                   >
                     <ThemedText style={[
                       styles.addButtonText,
                       { color: theme.colors.buttonText },
-                      ((modalMode === 'edit' && fieldLabel.trim() === originalFieldLabel) || 
-                       (modalMode === 'add' && !fieldLabel.trim())) && { opacity: 0.7 }
+                      (modalMode === 'add' && !fieldLabel.trim()) && { opacity: 0.7 }
                     ]}>
                       {modalMode === 'add' ? 'Add Field' : 'Save Changes'}
                     </ThemedText>
