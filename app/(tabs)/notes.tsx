@@ -4,7 +4,7 @@ import { useTheme } from '@/hooks/useTheme';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, FlatList, Keyboard, KeyboardAvoidingView, Modal, Platform, Pressable, StyleSheet, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
+import { Alert, Dimensions, FlatList, Keyboard, KeyboardAvoidingView, Modal, Platform, Pressable, StyleSheet, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 import { GestureHandlerRootView, PanGestureHandler } from 'react-native-gesture-handler';
 import Animated, { runOnJS, useAnimatedGestureHandler, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 
@@ -562,6 +562,7 @@ function SwipeableRow({
   const id = item.id;
   const translateX = useSharedValue(0);
   const deleteOpacity = useSharedValue(0);
+  const screenWidth = Dimensions.get('window').width;
 
   const resetAnimation = () => {
     translateX.value = withSpring(0);
@@ -601,13 +602,22 @@ function SwipeableRow({
   };
 
   const gestureHandler = useAnimatedGestureHandler({
-    onStart: (_, context: any) => {
+    onStart: (event, context: any) => {
       context.startX = translateX.value;
       context.startY = 0;
+      // Store the initial position to detect edge swipes
+      context.initialX = event.x;
     },
     onActive: (event, context: any) => {
-      if (Math.abs(event.translationX) > Math.abs(event.translationY)) {
+      // Prevent edge swipes (within 20px of screen edges)
+      if (context.initialX < 20 || context.initialX > screenWidth - 20) {
+        return;
+      }
+
+      // Only handle left swipes (negative translationX) that are clearly horizontal
+      if (event.translationX < 0 && Math.abs(event.translationX) > Math.abs(event.translationY) && Math.abs(event.translationX) > 10) {
         const newTranslateX = context.startX + event.translationX;
+        // Only allow left swipe (negative values) and limit to -80
         translateX.value = Math.min(0, Math.max(-80, newTranslateX));
         if (translateX.value < -40) {
           deleteOpacity.value = withSpring(1);
@@ -617,9 +627,25 @@ function SwipeableRow({
       }
     },
     onEnd: (event, context: any) => {
+      // Prevent edge swipes (within 20px of screen edges)
+      if (context.initialX < 20 || context.initialX > screenWidth - 20) {
+        translateX.value = withSpring(0);
+        deleteOpacity.value = withSpring(0);
+        return;
+      }
+      
+      // Completely ignore right swipes (positive translationX)
+      if (event.translationX >= 0) {
+        translateX.value = withSpring(0);
+        deleteOpacity.value = withSpring(0);
+        return;
+      }
+      
+      // Only trigger delete if it's a clear left swipe and we're not near the screen edge
       if (
         Math.abs(event.translationX) > Math.abs(event.translationY) &&
-        event.translationX < -60
+        event.translationX < -60 &&
+        Math.abs(event.translationX) > 10
       ) {
         // Show Alert (on JS thread)
         runOnJS(showDeleteAlert)();
@@ -678,8 +704,9 @@ function SwipeableRow({
       {/* Main Content */}
       <PanGestureHandler
         onGestureEvent={gestureHandler}
-        activeOffsetX={[-10, 10]}
-        failOffsetY={[-10, 10]}
+        activeOffsetX={[-20, 20]}
+        failOffsetY={[-15, 15]}
+        shouldCancelWhenOutside={true}
       >
         <Animated.View
           style={[
