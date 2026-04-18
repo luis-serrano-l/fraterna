@@ -9,14 +9,99 @@ import { useFocusEffect } from '@react-navigation/native';
 import React, { useEffect, useState } from 'react';
 import { Alert, Modal, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 import DraggableFlatList, { RenderItemParams } from 'react-native-draggable-flatlist';
-import { GestureHandlerRootView, PanGestureHandler } from 'react-native-gesture-handler';
+import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import Animated, {
   runOnJS,
-  useAnimatedGestureHandler,
   useAnimatedStyle,
   useSharedValue,
   withSpring
 } from 'react-native-reanimated';
+
+type FieldItemProps = {
+  item: Field;
+  drag: () => void;
+  isActive: boolean;
+  onDelete: (field: Field, onCancel: () => void) => void;
+  onEdit: (field: Field) => void;
+  onToggle: (fieldId: number) => void;
+  isVisible: boolean;
+};
+
+function FieldItem({ item, drag, isActive, onDelete, onEdit, onToggle, isVisible }: FieldItemProps) {
+  const theme = useTheme();
+  const translateX = useSharedValue(0);
+  const deleteOpacity = useSharedValue(0);
+  const startX = useSharedValue(0);
+
+  const resetAnimation = () => {
+    translateX.value = withSpring(0);
+    deleteOpacity.value = withSpring(0);
+  };
+
+  const panGesture = Gesture.Pan()
+    .activeOffsetX([-10, 10])
+    .failOffsetY([-10, 10])
+    .onBegin(() => {
+      startX.value = translateX.value;
+    })
+    .onUpdate((event) => {
+      if (Math.abs(event.translationX) > Math.abs(event.translationY)) {
+        const newTranslateX = startX.value + event.translationX;
+        translateX.value = Math.min(0, Math.max(-80, newTranslateX));
+        deleteOpacity.value = withSpring(translateX.value < -40 ? 1 : 0);
+      }
+    })
+    .onEnd((event) => {
+      if (Math.abs(event.translationX) > Math.abs(event.translationY) && event.translationX < -60) {
+        runOnJS(onDelete)(item, resetAnimation);
+      } else {
+        translateX.value = withSpring(0);
+        deleteOpacity.value = withSpring(0);
+      }
+    });
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: translateX.value }],
+  }));
+
+  const deleteButtonStyle = useAnimatedStyle(() => ({
+    opacity: deleteOpacity.value,
+  }));
+
+  return (
+    <View style={styles.fieldItemContainer}>
+      <Animated.View style={[styles.deleteBackground, deleteButtonStyle, { backgroundColor: '#FF3B30' }]}>
+        <IconSymbol name="trash.fill" size={24} color="white" />
+      </Animated.View>
+      <GestureDetector gesture={panGesture}>
+        <Animated.View style={[
+          styles.fieldContainer,
+          isActive && styles.fieldContainerActive,
+          animatedStyle,
+        ]}>
+          <TouchableOpacity style={styles.dragHandle} onPressIn={drag}>
+            <View style={styles.dragHandleIcon}>
+              <View style={[styles.dragLine, { backgroundColor: theme.colors.text }]} />
+              <View style={[styles.dragLine, { backgroundColor: theme.colors.text }]} />
+              <View style={[styles.dragLine, { backgroundColor: theme.colors.text }]} />
+            </View>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.checkboxContainer} onPress={() => onToggle(item.id)}>
+            <View style={[styles.checkbox, isVisible && styles.checkboxChecked, { borderColor: theme.colors.text }]}>
+              {isVisible && <ThemedText style={styles.checkmark}>✓</ThemedText>}
+            </View>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.fieldTextContainer, { backgroundColor: theme.colors.background }]}
+            onPress={() => onEdit(item)}
+          >
+            <ThemedText style={styles.fieldLabel}>{item.label}</ThemedText>
+          </TouchableOpacity>
+        </Animated.View>
+      </GestureDetector>
+    </View>
+  );
+}
 
 export default function SettingsScreen() {
   const [allFields, setAllFields] = useState<Field[]>([]);
@@ -257,128 +342,17 @@ export default function SettingsScreen() {
     setModalVisible(true);
   };
 
-  const renderFieldItem = ({ item, drag, isActive }: RenderItemParams<Field>) => {
-    const translateX = useSharedValue(0);
-    const deleteOpacity = useSharedValue(0);
-
-    const resetAnimation = () => {
-      translateX.value = withSpring(0);
-      deleteOpacity.value = withSpring(0);
-    };
-
-    const gestureHandler = useAnimatedGestureHandler({
-      onStart: (_, context: any) => {
-        context.startX = translateX.value;
-        context.startY = 0;
-      },
-      onActive: (event, context: any) => {
-        // Only handle horizontal gestures, ignore vertical scrolling
-        if (Math.abs(event.translationX) > Math.abs(event.translationY)) {
-          const newTranslateX = context.startX + event.translationX;
-          translateX.value = Math.min(0, Math.max(-80, newTranslateX));
-          
-          // Show delete button when swiped left
-          if (translateX.value < -40) {
-            deleteOpacity.value = withSpring(1);
-          } else {
-            deleteOpacity.value = withSpring(0);
-          }
-        }
-      },
-      onEnd: (event) => {
-        // Only trigger delete for horizontal swipes
-        if (Math.abs(event.translationX) > Math.abs(event.translationY) && event.translationX < -60) {
-          // Trigger delete if swiped far enough horizontally
-          runOnJS(handleDeleteField)(item, resetAnimation);
-        } else {
-          // Snap back if not swiped far enough or if it was a vertical gesture
-          translateX.value = withSpring(0);
-          deleteOpacity.value = withSpring(0);
-        }
-      },
-    });
-
-    const animatedStyle = useAnimatedStyle(() => {
-      return {
-        transform: [{ translateX: translateX.value }],
-      };
-    });
-
-    const deleteButtonStyle = useAnimatedStyle(() => {
-      return {
-        opacity: deleteOpacity.value,
-      };
-    });
-
-    return (
-      <View style={styles.fieldItemContainer}>
-        {/* Delete Button Background */}
-        <Animated.View style={[
-          styles.deleteBackground,
-          deleteButtonStyle,
-          { backgroundColor: '#FF3B30' }
-        ]}>
-          <IconSymbol
-            name="trash.fill"
-            size={24}
-            color="white"
-          />
-        </Animated.View>
-
-        {/* Main Field Content */}
-        <PanGestureHandler 
-          onGestureEvent={gestureHandler}
-          activeOffsetX={[-10, 10]} // Only activate for horizontal gestures
-          failOffsetY={[-10, 10]}   // Fail if vertical gesture exceeds threshold
-        >
-          <Animated.View style={[
-            styles.fieldContainer,
-            isActive && styles.fieldContainerActive,
-            animatedStyle
-          ]}>
-            {/* Drag Handle */}
-            <TouchableOpacity
-              style={styles.dragHandle}
-              onPressIn={drag}
-            >
-              <View style={styles.dragHandleIcon}>
-                <View style={[styles.dragLine, { backgroundColor: theme.colors.text }]} />
-                <View style={[styles.dragLine, { backgroundColor: theme.colors.text }]} />
-                <View style={[styles.dragLine, { backgroundColor: theme.colors.text }]} />
-              </View>
-            </TouchableOpacity>
-
-            {/* Checkbox */}
-            <TouchableOpacity
-              style={styles.checkboxContainer}
-              onPress={() => toggleField(item.id)}
-            >
-              <View style={[
-                styles.checkbox,
-                visibleFields[item.id] && styles.checkboxChecked,
-                { borderColor: theme.colors.text }
-              ]}>
-                {visibleFields[item.id] && (
-                  <ThemedText style={styles.checkmark}>✓</ThemedText>
-                )}
-              </View>
-            </TouchableOpacity>
-
-            {/* Field Text */}
-            <TouchableOpacity 
-              style={[
-                styles.fieldTextContainer,
-                { backgroundColor: theme.colors.background }
-              ]}
-              onPress={() => handleEditField(item)}
-            >
-              <ThemedText style={styles.fieldLabel}>{item.label}</ThemedText>
-            </TouchableOpacity>
-          </Animated.View>
-        </PanGestureHandler>
-      </View>
-    );
-  };
+  const renderFieldItem = ({ item, drag, isActive }: RenderItemParams<Field>) => (
+    <FieldItem
+      item={item}
+      drag={drag}
+      isActive={isActive}
+      onDelete={handleDeleteField}
+      onEdit={handleEditField}
+      onToggle={toggleField}
+      isVisible={!!visibleFields[item.id]}
+    />
+  );
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
