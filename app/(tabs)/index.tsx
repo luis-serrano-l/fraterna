@@ -8,7 +8,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useFocusEffect } from '@react-navigation/native';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, FlatList, Keyboard, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
+import { Alert, Dimensions, FlatList, Keyboard, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 import { GestureHandlerRootView, PanGestureHandler } from 'react-native-gesture-handler';
 import Animated, { runOnJS, useAnimatedGestureHandler, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 
@@ -281,6 +281,7 @@ export default function HomeScreen() {
     const id = item.id;
     const translateX = useSharedValue(0);
     const deleteOpacity = useSharedValue(0);
+    const screenWidth = Dimensions.get('window').width;
     const alertShownRef = React.useRef(false);
 
     const resetAnimation = () => {
@@ -316,12 +317,17 @@ export default function HomeScreen() {
     };
 
     const gestureHandler = useAnimatedGestureHandler({
-      onStart: (_, context: any) => {
+      onStart: (event, context: any) => {
         context.startX = translateX.value;
         context.startY = 0;
+        context.initialX = event.x;
       },
       onActive: (event, context: any) => {
-        if (Math.abs(event.translationX) > Math.abs(event.translationY)) {
+        if (context.initialX < 20 || context.initialX > screenWidth - 20) {
+          return;
+        }
+
+        if (event.translationX < 0 && Math.abs(event.translationX) > Math.abs(event.translationY) && Math.abs(event.translationX) > 10) {
           const newTranslateX = context.startX + event.translationX;
           translateX.value = Math.min(0, Math.max(-80, newTranslateX));
           if (translateX.value < -40) {
@@ -332,9 +338,22 @@ export default function HomeScreen() {
         }
       },
       onEnd: (event, context: any) => {
+        if (context.initialX < 20 || context.initialX > screenWidth - 20) {
+          translateX.value = withSpring(0);
+          deleteOpacity.value = withSpring(0);
+          return;
+        }
+
+        if (event.translationX >= 0) {
+          translateX.value = withSpring(0);
+          deleteOpacity.value = withSpring(0);
+          return;
+        }
+
         if (
           Math.abs(event.translationX) > Math.abs(event.translationY) &&
-          event.translationX < -60
+          event.translationX < -60 &&
+          Math.abs(event.translationX) > 10
         ) {
           runOnJS(showDeleteAlert)();
         } else {
@@ -390,8 +409,9 @@ export default function HomeScreen() {
         {/* Main Content */}
         <PanGestureHandler
           onGestureEvent={gestureHandler}
-          activeOffsetX={[-10, 10]}
-          failOffsetY={[-10, 10]}
+          activeOffsetX={[-20, 20]}
+          failOffsetY={[-15, 15]}
+          shouldCancelWhenOutside={true}
         >
           <Animated.View
             style={[
