@@ -46,7 +46,12 @@ jobs:
           EXPO_APPLE_API_KEY_PATH: /tmp/AuthKey.p8
 
       - name: Upload screenshots & metadata
-        run: bundle exec fastlane upload_store_assets
+        run: |
+          if find store-assets/screenshots -name "*.png" | grep -q .; then
+            bundle exec fastlane upload_store_assets
+          else
+            echo "No screenshots found, skipping upload."
+          fi
         env:
           ASC_API_KEY_ID: ${{ secrets.ASC_API_KEY_ID }}
           ASC_API_KEY_ISSUER_ID: ${{ secrets.ASC_API_KEY_ISSUER_ID }}
