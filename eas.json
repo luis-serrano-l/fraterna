@@ -18,9 +18,7 @@
   "submit": {
     "production": {
       "ios": {
-        "ascAppId": "env:ASC_APP_ID",
-        "appleApiKeyId": "env:ASC_API_KEY_ID",
-        "appleApiKeyIssuerId": "env:ASC_API_KEY_ISSUER_ID"
+        "ascAppId": "env:ASC_APP_ID"
       }
     }
   }
