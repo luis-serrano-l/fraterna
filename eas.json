@@ -1,6 +1,6 @@
 {
   "cli": {
-    "version": ">= 16.15.0",
+    "version": ">= 16.16.0",
     "appVersionSource": "remote"
   },
   "build": {
@@ -16,6 +16,12 @@
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "ios": {
+        "ascAppId": "env:ASC_APP_ID",
+        "appleApiKeyId": "env:ASC_API_KEY_ID",
+        "appleApiKeyIssuerId": "env:ASC_API_KEY_ISSUER_ID"
+      }
+    }
   }
 }
