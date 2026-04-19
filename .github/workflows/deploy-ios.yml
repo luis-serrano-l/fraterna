@@ -1,0 +1,54 @@
+name: Deploy iOS to App Store
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: macos-latest
+    timeout-minutes: 90
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install EAS CLI
+        run: npm install -g eas-cli
+
+      - name: Install Fastlane
+        run: bundle install
+
+      - name: Write ASC API key file
+        run: echo "$ASC_API_KEY_CONTENT" > /tmp/AuthKey.p8
+        env:
+          ASC_API_KEY_CONTENT: ${{ secrets.ASC_API_KEY_CONTENT }}
+
+      - name: EAS Build + Submit
+        run: |
+          eas build \
+            --platform ios \
+            --profile production \
+            --non-interactive \
+            --auto-submit \
+            --auto-submit-with-profile production
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          ASC_APP_ID: ${{ secrets.ASC_APP_ID }}
+          EXPO_APPLE_API_KEY_ID: ${{ secrets.ASC_API_KEY_ID }}
+          EXPO_APPLE_API_KEY_ISSUER_ID: ${{ secrets.ASC_API_KEY_ISSUER_ID }}
+          EXPO_APPLE_API_KEY_PATH: /tmp/AuthKey.p8
+
+      - name: Upload screenshots & metadata
+        run: bundle exec fastlane upload_store_assets
+        env:
+          ASC_API_KEY_ID: ${{ secrets.ASC_API_KEY_ID }}
+          ASC_API_KEY_ISSUER_ID: ${{ secrets.ASC_API_KEY_ISSUER_ID }}
+          ASC_API_KEY_CONTENT: ${{ secrets.ASC_API_KEY_CONTENT }}
