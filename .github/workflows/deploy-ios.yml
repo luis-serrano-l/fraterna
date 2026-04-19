@@ -37,7 +37,6 @@ jobs:
             --platform ios \
             --profile production \
             --non-interactive \
-            --auto-submit \
             --auto-submit-with-profile production
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
